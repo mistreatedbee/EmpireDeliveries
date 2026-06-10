@@ -7,7 +7,7 @@ import { Button, Input } from '@/components/ui';
 import { authService } from '@/services/auth.service';
 import { useUIStore } from '@/stores/uiStore';
 import { isValidEmail, isValidSAPhone, normalizeSAPhone } from '@/utils/validators';
-import { Colors } from '@/constants/colors';
+import { T } from '@/constants/colors';
 import { AppError } from '@/types/api.types';
 
 export default function RegisterScreen() {
@@ -46,14 +46,14 @@ export default function RegisterScreen() {
   };
 
   return (
-    <ScreenWrapper bg="black">
+    <ScreenWrapper bg="white">
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingVertical: 48 }}>
         <Pressable onPress={() => router.back()} style={{ marginBottom: 24 }}>
-          <Text style={{ color: Colors.gold[500], fontSize: 16 }}>← Back</Text>
+          <Text style={{ color: T.action, fontSize: 16, fontWeight: '600' }}>← Back</Text>
         </Pressable>
 
-        <Text style={{ color: '#FFFFFF', fontSize: 28, fontWeight: '900', marginBottom: 8 }}>Create account</Text>
-        <Text style={{ color: '#888', fontSize: 15, marginBottom: 36 }}>Join Empire Deliveries today</Text>
+        <Text style={{ color: T.text, fontSize: 28, fontWeight: '900', marginBottom: 6 }}>Create account</Text>
+        <Text style={{ color: T.textSec, fontSize: 15, marginBottom: 32 }}>Join Empire Deliveries today</Text>
 
         <View style={{ flexDirection: 'row', gap: 12 }}>
           <View style={{ flex: 1 }}>
@@ -75,18 +75,18 @@ export default function RegisterScreen() {
           secureTextEntry={!showPassword}
           placeholder="Min. 8 characters"
           error={errors.password}
-          rightIcon={<Text style={{ color: Colors.gold[500], fontWeight: '600', fontSize: 13 }}>{showPassword ? 'Hide' : 'Show'}</Text>}
+          rightIcon={<Text style={{ color: T.action, fontWeight: '600', fontSize: 13 }}>{showPassword ? 'Hide' : 'Show'}</Text>}
           onRightIconPress={() => setShowPassword((p) => !p)}
         />
 
-        <Button variant="gold" size="lg" onPress={() => validate() && registerMutation.mutate()} loading={registerMutation.isPending} style={{ marginTop: 8 }}>
+        <Button size="lg" onPress={() => validate() && registerMutation.mutate()} loading={registerMutation.isPending} style={{ marginTop: 8 }}>
           Create Account
         </Button>
 
         <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 24 }}>
-          <Text style={{ color: '#888', fontSize: 15 }}>Already have an account? </Text>
+          <Text style={{ color: T.textSec, fontSize: 15 }}>Already have an account? </Text>
           <Pressable onPress={() => router.replace('/(auth)/login')}>
-            <Text style={{ color: Colors.gold[500], fontWeight: '700', fontSize: 15 }}>Sign In</Text>
+            <Text style={{ color: T.action, fontWeight: '700', fontSize: 15 }}>Sign In</Text>
           </Pressable>
         </View>
       </ScrollView>

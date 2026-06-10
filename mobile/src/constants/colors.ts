@@ -1,3 +1,26 @@
+export const T = {
+  bg:           '#FFFFFF',
+  surface:      '#F5F5F5',
+  surface2:     '#EEEEEE',
+  border:       '#E8E8E8',
+  text:         '#0A0A0A',
+  textSec:      '#6B6B6B',
+  textTer:      '#A3A3A3',
+  textOnDark:   '#FFFFFF',
+  action:       '#0A0A0A',
+  actionPressed:'#2B2B2B',
+  gold:         '#C9A227',
+  goldBg:       '#FBF6E3',
+  success:      '#1E823B',
+  successBg:    '#E8F5EC',
+  danger:       '#C53030',
+  dangerBg:     '#FDECEC',
+  warning:      '#B45309',
+  warningBg:    '#FEF3E2',
+  dark:         '#0A0A0A',
+  darkSurface:  '#1C1C1C',
+} as const;
+
 export const Colors = {
   gold: {
     50: '#fdf9ec',

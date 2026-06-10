@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { ScrollView, View, Text, Pressable, FlatList, RefreshControl } from 'react-native';
+import { ScrollView, View, Text, Pressable, RefreshControl } from 'react-native';
 import { router } from 'expo-router';
+import { MapPin, ChevronDown, Bell, Search } from 'lucide-react-native';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { PromoBanner } from '@/components/home/PromoBanner';
 import { ServiceGrid } from '@/components/home/ServiceGrid';
@@ -13,13 +14,14 @@ import { useLocationStore } from '@/stores/locationStore';
 import { useNotificationStore } from '@/stores/notificationStore';
 import { useCartStore } from '@/stores/cartStore';
 import { useFeaturedRestaurants, usePopularRestaurants, useCategories } from '@/hooks/useRestaurants';
-import { Colors } from '@/constants/colors';
+import { T } from '@/constants/colors';
+import { formatPrice } from '@/utils/formatters';
+import { Restaurant } from '@/types/restaurant.types';
 
 export default function HomeScreen() {
-  const { user } = useAuthStore();
   const { selectedAddress } = useLocationStore();
   const { unreadCount } = useNotificationStore();
-  const { itemCount } = useCartStore();
+  const { itemCount, subtotal } = useCartStore();
   const [activeCategory, setActiveCategory] = useState('');
 
   const { data: featured, isLoading: loadingFeatured, refetch: refetchFeatured } = useFeaturedRestaurants();
@@ -33,70 +35,46 @@ export default function HomeScreen() {
     setRefreshing(false);
   };
 
-  const greeting = () => {
-    const h = new Date().getHours();
-    if (h < 12) return 'Good morning';
-    if (h < 17) return 'Good afternoon';
-    return 'Good evening';
-  };
+  const cartTotal = subtotal + 35 + Math.round(subtotal * 0.05 * 100) / 100;
 
   return (
-    <ScreenWrapper bg="surface" edges={['top', 'left', 'right']}>
-      {/* Header */}
-      <View style={{ backgroundColor: Colors.empire.black, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 20 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-          <View>
-            <Text style={{ color: Colors.gold[500], fontSize: 11, fontWeight: '700', letterSpacing: 3 }}>EMPIRE DELIVERIES</Text>
-            <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '800', marginTop: 2 }}>
-              {greeting()}{user ? `, ${user.firstName}` : ''} 👋
-            </Text>
-          </View>
-          <View style={{ flexDirection: 'row', gap: 12 }}>
-            <Pressable onPress={() => router.push('/(customer)/(notifications)')} style={{ position: 'relative' }}>
-              <Text style={{ fontSize: 24 }}>🔔</Text>
-              {unreadCount > 0 && (
-                <View style={{ position: 'absolute', top: -4, right: -4, backgroundColor: Colors.gold[500], borderRadius: 8, width: 16, height: 16, alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ color: '#000', fontSize: 9, fontWeight: '800' }}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
-                </View>
-              )}
-            </Pressable>
-            {itemCount > 0 && (
-              <Pressable onPress={() => router.push('/(modals)/cart')} style={{ position: 'relative' }}>
-                <Text style={{ fontSize: 24 }}>🛒</Text>
-                <View style={{ position: 'absolute', top: -4, right: -4, backgroundColor: Colors.empire.error, borderRadius: 8, width: 16, height: 16, alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ color: '#fff', fontSize: 9, fontWeight: '800' }}>{itemCount}</Text>
-                </View>
-              </Pressable>
-            )}
-          </View>
-        </View>
-
-        {/* Location */}
+    <ScreenWrapper bg="white" edges={['top', 'left', 'right']}>
+      {/* Top bar */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10, backgroundColor: T.bg, borderBottomWidth: 1, borderBottomColor: T.border }}>
         <Pressable
           onPress={() => router.push('/(auth)/location-setup')}
-          style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.empire.charcoal, borderRadius: 12, padding: 10, gap: 8 }}
+          style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 }}
         >
-          <Text style={{ fontSize: 16 }}>📍</Text>
-          <Text style={{ color: '#FFFFFF', flex: 1, fontSize: 14 }} numberOfLines={1}>
-            {selectedAddress?.formattedAddress ?? 'Set your delivery location'}
+          <MapPin size={15} color={T.action} />
+          <Text style={{ fontSize: 14, fontWeight: '600', color: T.text, flex: 1 }} numberOfLines={1}>
+            {selectedAddress?.formattedAddress ?? 'Set delivery location'}
           </Text>
-          <Text style={{ color: Colors.gold[500], fontSize: 12, fontWeight: '600' }}>Change</Text>
+          <ChevronDown size={14} color={T.textSec} />
+        </Pressable>
+        <Pressable
+          onPress={() => router.push('/(customer)/(notifications)')}
+          style={{ marginLeft: 16, padding: 4, position: 'relative' }}
+        >
+          <Bell size={22} color={T.text} />
+          {unreadCount > 0 && (
+            <View style={{ position: 'absolute', top: 2, right: 2, backgroundColor: T.danger, borderRadius: 5, width: 10, height: 10 }} />
+          )}
         </Pressable>
       </View>
 
-      {/* Search Bar */}
+      {/* Search pill */}
       <Pressable
         onPress={() => router.push('/(customer)/(home)/search')}
-        style={{ marginHorizontal: 20, marginTop: 16, marginBottom: 4, flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 16, padding: 14, gap: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3 }}
+        style={{ marginHorizontal: 16, marginTop: 12, marginBottom: 4, flexDirection: 'row', alignItems: 'center', backgroundColor: T.surface, borderRadius: 999, paddingHorizontal: 14, height: 48, gap: 8 }}
       >
-        <Text style={{ fontSize: 18 }}>🔍</Text>
-        <Text style={{ color: '#AAA', fontSize: 15 }}>Search restaurants or food...</Text>
+        <Search size={16} color={T.textTer} />
+        <Text style={{ color: T.textTer, fontSize: 15, flex: 1 }}>Search restaurants or food...</Text>
       </Pressable>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 32 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.gold[500]} />}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: itemCount > 0 ? 96 : 32 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={T.action} />}
       >
         <SectionHeader title="Quick Services" />
         <ServiceGrid />
@@ -111,27 +89,34 @@ export default function HomeScreen() {
           </>
         )}
 
-        <SectionHeader title="Featured Restaurants" onSeeAll={() => router.push('/(customer)/(home)/restaurant-list')} />
-        {loadingFeatured ? (
-          <>{[0, 1, 2].map((i) => <SkeletonCard key={i} />)}</>
-        ) : (
-          featured?.map((r: import('@/types/restaurant.types').Restaurant) => <RestaurantCard key={r.id} restaurant={r} />)
-        )}
+        <SectionHeader title="Featured" onSeeAll={() => router.push('/(customer)/(home)/restaurant-list')} />
+        {loadingFeatured
+          ? [0, 1, 2].map((i) => <SkeletonCard key={i} />)
+          : featured?.map((r: Restaurant) => <RestaurantCard key={r.id} restaurant={r} />)}
 
-        <SectionHeader title="Popular Near You" onSeeAll={() => router.push({ pathname: '/(customer)/(home)/restaurant-list', params: { sort: 'popular' } })} />
+        <SectionHeader title="Popular near you" onSeeAll={() => router.push({ pathname: '/(customer)/(home)/restaurant-list', params: { sort: 'popular' } })} />
         {loadingPopular ? (
           <View style={{ height: 180 }} />
         ) : (
-          <FlatList
-            horizontal
-            data={popular ?? []}
-            keyExtractor={(r) => r.id}
-            showsHorizontalScrollIndicator={false}
-            renderItem={({ item }: { item: import('@/types/restaurant.types').Restaurant }) => <RestaurantCard restaurant={item} wide />}
-            scrollEnabled
-          />
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingRight: 4 }}>
+            {(popular ?? []).map((r: Restaurant) => <RestaurantCard key={r.id} restaurant={r} wide />)}
+          </ScrollView>
         )}
       </ScrollView>
+
+      {/* Floating cart pill */}
+      {itemCount > 0 && (
+        <Pressable
+          onPress={() => router.push('/(modals)/cart')}
+          style={{ position: 'absolute', bottom: 24, left: 16, right: 16, backgroundColor: T.action, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+        >
+          <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 8, width: 28, height: 28, alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ color: '#FFF', fontWeight: '800', fontSize: 13 }}>{itemCount}</Text>
+          </View>
+          <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 15 }}>View cart</Text>
+          <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 14 }}>{formatPrice(cartTotal)}</Text>
+        </Pressable>
+      )}
     </ScreenWrapper>
   );
 }

@@ -10,7 +10,7 @@ import { useUIStore } from '@/stores/uiStore';
 import { isValidEmail } from '@/utils/validators';
 import { registerForPushNotifications } from '@/lib/notifications';
 import { notificationService } from '@/services/notification.service';
-import { Colors } from '@/constants/colors';
+import { T } from '@/constants/colors';
 import { AppError } from '@/types/api.types';
 
 export default function LoginScreen() {
@@ -50,20 +50,17 @@ export default function LoginScreen() {
   };
 
   return (
-    <ScreenWrapper bg="black">
+    <ScreenWrapper bg="white">
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24 }}>
         <View style={{ flex: 1, justifyContent: 'center', paddingVertical: 48 }}>
-          {/* Logo */}
+          {/* Wordmark */}
           <View style={{ alignItems: 'center', marginBottom: 48 }}>
-            <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: Colors.gold[500], alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-              <Text style={{ fontSize: 36 }}>👑</Text>
-            </View>
-            <Text style={{ color: Colors.gold[500], fontSize: 26, fontWeight: '900' }}>EMPIRE</Text>
-            <Text style={{ color: '#FFFFFF', fontSize: 13, letterSpacing: 5, fontWeight: '300' }}>DELIVERIES</Text>
+            <Text style={{ fontSize: 26, fontWeight: '900', color: T.text, letterSpacing: -0.5 }}>Empire Deliveries</Text>
+            <Text style={{ fontSize: 12, color: T.textTer, letterSpacing: 3, marginTop: 2, textTransform: 'uppercase' }}>Order. Track. Enjoy.</Text>
           </View>
 
-          <Text style={{ color: '#FFFFFF', fontSize: 28, fontWeight: '900', marginBottom: 8 }}>Welcome back</Text>
-          <Text style={{ color: '#888', fontSize: 15, marginBottom: 36 }}>Sign in to your account</Text>
+          <Text style={{ color: T.text, fontSize: 28, fontWeight: '900', marginBottom: 6 }}>Welcome back</Text>
+          <Text style={{ color: T.textSec, fontSize: 15, marginBottom: 32 }}>Sign in to your account</Text>
 
           <Input
             label="Email address"
@@ -74,7 +71,6 @@ export default function LoginScreen() {
             autoComplete="email"
             placeholder="you@example.com"
             error={errors.email}
-            style={{ color: '#0A0A0A' }}
           />
 
           <Input
@@ -85,7 +81,7 @@ export default function LoginScreen() {
             placeholder="••••••••"
             error={errors.password}
             rightIcon={
-              <Text style={{ color: Colors.gold[500], fontWeight: '600', fontSize: 13 }}>
+              <Text style={{ color: T.action, fontWeight: '600', fontSize: 13 }}>
                 {showPassword ? 'Hide' : 'Show'}
               </Text>
             }
@@ -93,17 +89,17 @@ export default function LoginScreen() {
           />
 
           <Pressable onPress={() => router.push('/(auth)/forgot-password')} style={{ alignSelf: 'flex-end', marginBottom: 28, marginTop: -8 }}>
-            <Text style={{ color: Colors.gold[500], fontWeight: '600', fontSize: 14 }}>Forgot password?</Text>
+            <Text style={{ color: T.action, fontWeight: '600', fontSize: 14 }}>Forgot password?</Text>
           </Pressable>
 
-          <Button variant="gold" size="lg" onPress={handleLogin} loading={loginMutation.isPending}>
+          <Button size="lg" onPress={handleLogin} loading={loginMutation.isPending}>
             Sign In
           </Button>
 
           <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 28 }}>
-            <Text style={{ color: '#888', fontSize: 15 }}>Don't have an account? </Text>
+            <Text style={{ color: T.textSec, fontSize: 15 }}>Don't have an account? </Text>
             <Pressable onPress={() => router.push('/(auth)/register')}>
-              <Text style={{ color: Colors.gold[500], fontWeight: '700', fontSize: 15 }}>Sign Up</Text>
+              <Text style={{ color: T.action, fontWeight: '700', fontSize: 15 }}>Sign Up</Text>
             </Pressable>
           </View>
         </View>

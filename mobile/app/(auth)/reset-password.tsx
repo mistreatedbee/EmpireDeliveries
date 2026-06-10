@@ -7,7 +7,7 @@ import { Button, Input } from '@/components/ui';
 import { KeyboardWrapper } from '@/components/layout/KeyboardWrapper';
 import { authService } from '@/services/auth.service';
 import { useUIStore } from '@/stores/uiStore';
-import { Colors } from '@/constants/colors';
+import { T } from '@/constants/colors';
 import { AppError } from '@/types/api.types';
 
 export default function ResetPasswordScreen() {
@@ -35,15 +35,15 @@ export default function ResetPasswordScreen() {
   };
 
   return (
-    <ScreenWrapper bg="black">
+    <ScreenWrapper bg="white">
       <KeyboardWrapper contentStyle={{ paddingHorizontal: 24, paddingTop: 80 }}>
-        <Text style={{ color: '#FFFFFF', fontSize: 28, fontWeight: '900', marginBottom: 8 }}>New password</Text>
-        <Text style={{ color: '#888', fontSize: 15, marginBottom: 36 }}>Choose a strong password.</Text>
+        <Text style={{ color: T.text, fontSize: 28, fontWeight: '900', marginBottom: 8 }}>New password</Text>
+        <Text style={{ color: T.textSec, fontSize: 15, marginBottom: 32 }}>Choose a strong password.</Text>
 
         <Input label="New password" value={password} onChangeText={setPassword} secureTextEntry placeholder="Min. 8 characters" error={errors.password} />
         <Input label="Confirm password" value={confirm} onChangeText={setConfirm} secureTextEntry placeholder="Repeat password" error={errors.confirm} />
 
-        <Button variant="gold" size="lg" onPress={() => validate() && mutation.mutate()} loading={mutation.isPending} style={{ marginTop: 8 }}>
+        <Button size="lg" onPress={() => validate() && mutation.mutate()} loading={mutation.isPending} style={{ marginTop: 8 }}>
           Reset Password
         </Button>
       </KeyboardWrapper>

@@ -2,12 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMutation } from '@tanstack/react-query';
+import { Smartphone } from 'lucide-react-native';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { Button, OtpInput } from '@/components/ui';
 import { authService } from '@/services/auth.service';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
-import { Colors } from '@/constants/colors';
+import { T } from '@/constants/colors';
 import { AppError } from '@/types/api.types';
 
 export default function OtpScreen() {
@@ -54,38 +55,40 @@ export default function OtpScreen() {
   }, [otp, handleVerify]);
 
   return (
-    <ScreenWrapper bg="black">
+    <ScreenWrapper bg="white">
       <View style={{ flex: 1, paddingHorizontal: 24, paddingTop: 60, alignItems: 'center' }}>
         <Pressable onPress={() => router.back()} style={{ alignSelf: 'flex-start', marginBottom: 40 }}>
-          <Text style={{ color: Colors.gold[500], fontSize: 16 }}>← Back</Text>
+          <Text style={{ color: T.action, fontSize: 16, fontWeight: '600' }}>← Back</Text>
         </Pressable>
 
         <View style={{ alignItems: 'center', marginBottom: 40 }}>
-          <Text style={{ fontSize: 48, marginBottom: 16 }}>📱</Text>
-          <Text style={{ color: '#FFFFFF', fontSize: 28, fontWeight: '900', textAlign: 'center', marginBottom: 12 }}>
+          <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: T.surface, alignItems: 'center', justifyContent: 'center', marginBottom: 20, borderWidth: 1, borderColor: T.border }}>
+            <Smartphone size={32} color={T.text} />
+          </View>
+          <Text style={{ color: T.text, fontSize: 28, fontWeight: '900', textAlign: 'center', marginBottom: 10 }}>
             Verify your number
           </Text>
-          <Text style={{ color: '#888', fontSize: 15, textAlign: 'center', lineHeight: 22 }}>
+          <Text style={{ color: T.textSec, fontSize: 15, textAlign: 'center', lineHeight: 22 }}>
             We sent a 6-digit code to{'\n'}
-            <Text style={{ color: Colors.gold[500], fontWeight: '700' }}>{phone}</Text>
+            <Text style={{ color: T.text, fontWeight: '700' }}>{phone}</Text>
           </Text>
         </View>
 
         <OtpInput length={6} value={otp} onChange={setOtp} error={verifyMutation.isError} />
 
         <View style={{ marginTop: 48, width: '100%' }}>
-          <Button variant="gold" size="lg" onPress={handleVerify} loading={verifyMutation.isPending} disabled={otp.length < 6}>
+          <Button size="lg" onPress={handleVerify} loading={verifyMutation.isPending} disabled={otp.length < 6}>
             Verify
           </Button>
         </View>
 
         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 24 }}>
-          <Text style={{ color: '#888', fontSize: 14 }}>Didn't receive the code? </Text>
+          <Text style={{ color: T.textSec, fontSize: 14 }}>Didn't receive the code? </Text>
           {countdown > 0 ? (
-            <Text style={{ color: '#555', fontSize: 14 }}>Resend in {countdown}s</Text>
+            <Text style={{ color: T.textTer, fontSize: 14 }}>Resend in {countdown}s</Text>
           ) : (
             <Pressable onPress={() => resendMutation.mutate()} disabled={resendMutation.isPending}>
-              <Text style={{ color: Colors.gold[500], fontWeight: '700', fontSize: 14 }}>Resend OTP</Text>
+              <Text style={{ color: T.action, fontWeight: '700', fontSize: 14 }}>Resend OTP</Text>
             </Pressable>
           )}
         </View>

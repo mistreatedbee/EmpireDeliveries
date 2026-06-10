@@ -47,8 +47,8 @@ export function Header({ title, showBack = true, rightAction, onBack, transparen
           <Pressable onPress={rightAction.onPress} className="w-10 h-10 items-center justify-center rounded-full bg-surface-100">
             {rightAction.icon}
             {rightAction.badge !== undefined && rightAction.badge > 0 && (
-              <View className="absolute -top-1 -right-1 bg-gold-500 rounded-full w-5 h-5 items-center justify-center">
-                <Text className="text-empire-black text-xs font-bold">{rightAction.badge > 9 ? '9+' : rightAction.badge}</Text>
+              <View className="absolute -top-1 -right-1 bg-t-danger rounded-full w-5 h-5 items-center justify-center">
+                <Text className="text-white text-xs font-bold">{rightAction.badge > 9 ? '9+' : rightAction.badge}</Text>
               </View>
             )}
           </Pressable>

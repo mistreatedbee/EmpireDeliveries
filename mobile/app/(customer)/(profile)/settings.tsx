@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Switch } from 'react-native';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { Header } from '@/components/layout/Header';
-import { Colors } from '@/constants/colors';
+import { T } from '@/constants/colors';
 
 export default function SettingsScreen() {
   const [pushEnabled, setPushEnabled] = useState(true);
@@ -16,27 +16,27 @@ export default function SettingsScreen() {
   ];
 
   return (
-    <ScreenWrapper bg="surface">
+    <ScreenWrapper bg="white">
       <Header title="Settings" />
-      <View style={{ margin: 20 }}>
-        <View style={{ backgroundColor: '#FFF', borderRadius: 20, overflow: 'hidden' }}>
+      <View style={{ margin: 16 }}>
+        <View style={{ backgroundColor: T.bg, borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: T.border }}>
           {settings.map((s, i) => (
-            <View key={s.label} style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: i < settings.length - 1 ? 1 : 0, borderBottomColor: '#F0F0F0', gap: 12 }}>
+            <View key={s.label} style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: i < settings.length - 1 ? 1 : 0, borderBottomColor: T.border, gap: 12 }}>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontWeight: '700', fontSize: 15, color: Colors.empire.black }}>{s.label}</Text>
-                <Text style={{ fontSize: 12, color: '#888', marginTop: 1 }}>{s.subtitle}</Text>
+                <Text style={{ fontWeight: '700', fontSize: 15, color: T.text }}>{s.label}</Text>
+                <Text style={{ fontSize: 12, color: T.textSec, marginTop: 1 }}>{s.subtitle}</Text>
               </View>
               <Switch
                 value={s.value}
                 onValueChange={s.onChange}
-                trackColor={{ false: '#E8E8E8', true: Colors.gold[500] }}
-                thumbColor={s.value ? Colors.empire.black : '#FFFFFF'}
+                trackColor={{ false: T.border, true: T.action }}
+                thumbColor="#FFFFFF"
               />
             </View>
           ))}
         </View>
 
-        <Text style={{ color: '#AAA', fontSize: 13, textAlign: 'center', marginTop: 32, lineHeight: 20 }}>
+        <Text style={{ color: T.textTer, fontSize: 13, textAlign: 'center', marginTop: 32, lineHeight: 20 }}>
           App version 1.0.0{'\n'}
           © 2025 Empire Deliveries (Pty) Ltd
         </Text>

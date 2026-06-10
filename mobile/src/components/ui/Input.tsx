@@ -23,10 +23,10 @@ export function Input({
   const [focused, setFocused] = useState(false);
 
   const borderColor = error
-    ? 'border-empire-error'
+    ? 'border-t-danger'
     : focused
-    ? 'border-gold-500'
-    : 'border-surface-300';
+    ? 'border-t-action'
+    : 'border-t-border';
 
   return (
     <View className="mb-4">
