@@ -7,7 +7,8 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/lib/queryClient';
 import { injectAuthStore } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
-import { setupNotificationListeners } from '@/lib/notifications';
+import { setupNotificationListeners, registerForPushNotifications } from '@/lib/notifications';
+import { notificationService } from '@/services/notification.service';
 import Toast from '@/components/ui/Toast';
 
 injectAuthStore(useAuthStore);
@@ -16,6 +17,12 @@ export default function RootLayout() {
   useEffect(() => {
     const cleanup = setupNotificationListeners();
     return cleanup;
+  }, []);
+
+  useEffect(() => {
+    registerForPushNotifications().then((token) => {
+      if (token) notificationService.registerToken(token).catch(() => null);
+    });
   }, []);
 
   return (

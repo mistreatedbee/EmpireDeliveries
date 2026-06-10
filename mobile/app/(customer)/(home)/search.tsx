@@ -14,7 +14,8 @@ export default function SearchScreen() {
   const [activeFilter, setActiveFilter] = useState('All');
   const deferredQuery = useDeferredValue(query);
 
-  const { data, isLoading } = useSearch(deferredQuery);
+  const categoryFilter = activeFilter !== 'All' ? activeFilter.toLowerCase().replace(' ', '-') : undefined;
+  const { data, isLoading } = useSearch(deferredQuery, categoryFilter ? { category: categoryFilter as import('@/types/restaurant.types').RestaurantCategory } : undefined);
 
   return (
     <ScreenWrapper bg="surface">

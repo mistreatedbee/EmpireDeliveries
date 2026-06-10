@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
-import { View, Text, FlatList, Pressable, Image, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, Pressable, Image, ActivityIndicator, Alert } from 'react-native';
 import { router } from 'expo-router';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useOrders } from '@/hooks/useOrders';
 import { Order } from '@/types/order.types';
+import { orderService } from '@/services/order.service';
+import { queryKeys } from '@/constants/queryKeys';
+import { useUIStore } from '@/stores/uiStore';
 import { Colors } from '@/constants/colors';
 import { formatPrice, formatDate, formatOrderStatus } from '@/utils/formatters';
 
@@ -17,8 +21,10 @@ const STATUS_MAP: Record<Tab, string[]> = {
   cancelled: ['cancelled'],
 };
 
-function OrderCard({ order }: { order: Order }) {
+function OrderCard({ order, onCancel }: { order: Order; onCancel: () => void }) {
   const isActive = STATUS_MAP.active.includes(order.status);
+  const canCancel = order.status === 'placed';
+
   return (
     <Pressable
       onPress={() => isActive ? router.push(`/(customer)/(orders)/tracking/${order.id}`) : undefined}
@@ -41,9 +47,19 @@ function OrderCard({ order }: { order: Order }) {
         <Text style={{ fontWeight: '800', fontSize: 16, color: Colors.empire.black }}>{formatPrice(order.total)}</Text>
       </View>
       {isActive && (
-        <View style={{ marginTop: 10, backgroundColor: Colors.gold[50], borderRadius: 10, padding: 10, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <Text style={{ fontSize: 16 }}>🔄</Text>
-          <Text style={{ color: Colors.gold[700], fontWeight: '700', fontSize: 13 }}>Tap to track your order</Text>
+        <View style={{ marginTop: 10, backgroundColor: Colors.gold[50], borderRadius: 10, padding: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Text style={{ fontSize: 16 }}>🔄</Text>
+            <Text style={{ color: Colors.gold[700], fontWeight: '700', fontSize: 13 }}>Tap to track your order</Text>
+          </View>
+          {canCancel && (
+            <Pressable
+              onPress={(e) => { e.stopPropagation(); onCancel(); }}
+              style={{ backgroundColor: '#FF4444', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }}
+            >
+              <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 12 }}>Cancel</Text>
+            </Pressable>
+          )}
         </View>
       )}
     </Pressable>
@@ -52,9 +68,27 @@ function OrderCard({ order }: { order: Order }) {
 
 export default function OrdersScreen() {
   const [activeTab, setActiveTab] = useState<Tab>('active');
+  const queryClient = useQueryClient();
+  const { showToast } = useUIStore();
 
   const activeStatus = STATUS_MAP[activeTab].join(',');
   const { data, isLoading } = useOrders(activeStatus);
+
+  const cancelMutation = useMutation({
+    mutationFn: (id: string) => orderService.cancel(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });
+      showToast('Order cancelled', 'success');
+    },
+    onError: () => showToast('Cannot cancel this order', 'error'),
+  });
+
+  const handleCancel = (order: Order) => {
+    Alert.alert('Cancel Order', 'Are you sure you want to cancel this order?', [
+      { text: 'Keep Order', style: 'cancel' },
+      { text: 'Cancel Order', style: 'destructive', onPress: () => cancelMutation.mutate(order.id) },
+    ]);
+  };
 
   const orders = data?.data ?? [];
 
@@ -90,7 +124,7 @@ export default function OrdersScreen() {
         <FlatList
           data={orders}
           keyExtractor={(o) => o.id}
-          renderItem={({ item }) => <OrderCard order={item} />}
+          renderItem={({ item }) => <OrderCard order={item} onCancel={() => handleCancel(item)} />}
           contentContainerStyle={{ padding: 20, paddingBottom: 32 }}
           showsVerticalScrollIndicator={false}
         />
