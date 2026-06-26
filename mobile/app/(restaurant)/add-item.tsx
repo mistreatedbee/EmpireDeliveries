@@ -171,7 +171,6 @@ export default function AddMenuItem() {
         categoryId,
         imageUrl,
         isAvailable,
-        // @ts-ignore — extended payload
         addonGroups: addonGroupsPayload.length > 0 ? addonGroupsPayload : undefined,
       });
     },

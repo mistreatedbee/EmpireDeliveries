@@ -44,6 +44,28 @@ export interface RestaurantOrder {
   items: RestaurantOrderItem[];
 }
 
+export interface AddonInput {
+  name: string;
+  price: number;
+}
+
+export interface AddonGroupInput {
+  name: string;
+  required?: boolean;
+  addons: AddonInput[];
+}
+
+export interface RestaurantAddon extends AddonInput {
+  id: string;
+}
+
+export interface RestaurantAddonGroup {
+  id: string;
+  name: string;
+  required: boolean;
+  addons: RestaurantAddon[];
+}
+
 export interface RestaurantMenuItem {
   id: string;
   name: string;
@@ -53,6 +75,7 @@ export interface RestaurantMenuItem {
   isAvailable: boolean;
   categoryId: string;
   categoryName: string;
+  addonGroups: RestaurantAddonGroup[];
 }
 
 export interface RestaurantMenuCategory {
@@ -68,6 +91,7 @@ export interface MenuItemInput {
   imageUrl?: string;
   categoryId: string;
   isAvailable?: boolean;
+  addonGroups?: AddonGroupInput[];
 }
 
 export interface RestaurantAnalytics {
@@ -124,7 +148,34 @@ export const restaurantManagementService = {
     await api.delete(`/restaurant/menu/items/${id}`);
   },
 
-  async updateProfile(data: { name: string; address: string; deliveryFee: number; minOrder: number }): Promise<Partial<RestaurantProfile>> {
+  async addCategory(name: string): Promise<{ id: string; name: string; displayOrder: number }> {
+    const res = await api.post<never, ApiResponse<{ id: string; name: string; displayOrder: number }>>('/restaurant/menu/categories', { name });
+    return res.data;
+  },
+
+  async renameCategory(id: string, name: string): Promise<{ id: string; name: string; displayOrder: number }> {
+    const res = await api.put<never, ApiResponse<{ id: string; name: string; displayOrder: number }>>(`/restaurant/menu/categories/${id}`, { name });
+    return res.data;
+  },
+
+  async deleteCategory(id: string): Promise<void> {
+    await api.delete(`/restaurant/menu/categories/${id}`);
+  },
+
+  async reorderCategories(order: string[]): Promise<void> {
+    await api.put('/restaurant/menu/categories/reorder', { order });
+  },
+
+  async updateProfile(data: {
+    name?: string;
+    address?: string;
+    deliveryFee?: number;
+    minOrder?: number;
+    description?: string;
+    isOpen?: boolean;
+    deliveryTimeMin?: number;
+    deliveryTimeMax?: number;
+  }): Promise<Partial<RestaurantProfile>> {
     const res = await api.put<never, ApiResponse<Partial<RestaurantProfile>>>('/restaurant/me', data);
     return res.data;
   },

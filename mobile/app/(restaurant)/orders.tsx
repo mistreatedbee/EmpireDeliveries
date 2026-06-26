@@ -4,20 +4,24 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { restaurantManagementService, RestaurantOrder } from '@/services/restaurant-management.service';
 import { Colors } from '@/constants/colors';
 
-type Filter = 'all' | 'placed' | 'preparing' | 'ready';
+type Filter = 'all' | 'placed' | 'preparing' | 'ready' | 'history';
 
 const FILTERS: { id: Filter; label: string }[] = [
   { id: 'all', label: 'All' },
   { id: 'placed', label: 'New' },
   { id: 'preparing', label: 'Preparing' },
   { id: 'ready', label: 'Ready' },
+  { id: 'history', label: 'History' },
 ];
 
 export default function RestaurantOrders() {
   const [filter, setFilter] = useState<Filter>('all');
   const queryClient = useQueryClient();
 
-  const statusParam = filter === 'all' ? 'placed,confirmed,preparing,ready' : filter;
+  const statusParam =
+    filter === 'all' ? 'placed,confirmed,preparing,ready'
+    : filter === 'history' ? 'delivered,cancelled'
+    : filter;
 
   const { data: orders, isLoading } = useQuery({
     queryKey: ['restaurant', 'orders', filter],
@@ -52,7 +56,12 @@ export default function RestaurantOrders() {
       </View>
 
       {/* Filter pills */}
-      <View style={{ flexDirection: 'row', paddingHorizontal: 20, paddingVertical: 12, gap: 8, backgroundColor: Colors.empire.black, borderBottomLeftRadius: 20, borderBottomRightRadius: 20 }}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 12, gap: 8 }}
+        style={{ backgroundColor: Colors.empire.black, borderBottomLeftRadius: 20, borderBottomRightRadius: 20 }}
+      >
         {FILTERS.map((f) => (
           <Pressable
             key={f.id}
@@ -62,7 +71,7 @@ export default function RestaurantOrders() {
             <Text style={{ color: filter === f.id ? Colors.empire.black : '#aaa', fontWeight: '700', fontSize: 13 }}>{f.label}</Text>
           </Pressable>
         ))}
-      </View>
+      </ScrollView>
 
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
         {isLoading && <ActivityIndicator color={Colors.gold[500]} style={{ marginTop: 20 }} />}
@@ -110,6 +119,12 @@ export default function RestaurantOrders() {
                 {order.status === 'ready' && (
                   <Text style={{ color: Colors.empire.success, fontWeight: '700', fontSize: 13 }}>Awaiting driver</Text>
                 )}
+                {order.status === 'delivered' && (
+                  <Text style={{ color: Colors.empire.success, fontWeight: '700', fontSize: 13 }}>Delivered</Text>
+                )}
+                {order.status === 'cancelled' && (
+                  <Text style={{ color: Colors.empire.error, fontWeight: '700', fontSize: 13 }}>Cancelled</Text>
+                )}
               </View>
             </View>
           );
@@ -123,14 +138,14 @@ export default function RestaurantOrders() {
 }
 
 function statusLabel(s: string) {
-  const m: Record<string, string> = { placed: 'New', confirmed: 'Confirmed', preparing: 'Preparing', ready: 'Ready' };
+  const m: Record<string, string> = { placed: 'New', confirmed: 'Confirmed', preparing: 'Preparing', ready: 'Ready', delivered: 'Delivered', cancelled: 'Cancelled' };
   return m[s] ?? s;
 }
 function statusBg(s: string) {
-  const m: Record<string, string> = { placed: '#FFF3E0', confirmed: '#E3F2FD', preparing: '#F3E5F5', ready: '#E8F5E9' };
+  const m: Record<string, string> = { placed: '#FFF3E0', confirmed: '#E3F2FD', preparing: '#F3E5F5', ready: '#E8F5E9', delivered: '#E8F5E9', cancelled: '#FFEBEE' };
   return m[s] ?? Colors.surface[100];
 }
 function statusFg(s: string) {
-  const m: Record<string, string> = { placed: '#E65100', confirmed: '#1565C0', preparing: '#6A1B9A', ready: '#2E7D32' };
+  const m: Record<string, string> = { placed: '#E65100', confirmed: '#1565C0', preparing: '#6A1B9A', ready: '#2E7D32', delivered: '#2E7D32', cancelled: '#C62828' };
   return m[s] ?? '#888';
 }

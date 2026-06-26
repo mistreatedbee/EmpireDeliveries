@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { Store, MapPin, DollarSign, ShoppingBag, LogOut, ChevronRight, Lock, Pencil } from 'lucide-react-native';
+import { Store, MapPin, DollarSign, ShoppingBag, LogOut, ChevronRight, Lock, Pencil, BadgeCheck } from 'lucide-react-native';
 import { useAuthStore } from '@/stores/authStore';
 import { restaurantManagementService } from '@/services/restaurant-management.service';
 import { Colors } from '@/constants/colors';
@@ -89,6 +89,16 @@ export default function RestaurantProfile() {
         {/* Account section */}
         <Text style={{ fontWeight: '800', color: Colors.empire.black, fontSize: 13, letterSpacing: 1, marginBottom: 12, opacity: 0.5 }}>ACCOUNT</Text>
         <View style={{ backgroundColor: '#fff', borderRadius: 18, borderWidth: 1, borderColor: Colors.surface[200], marginBottom: 24, overflow: 'hidden' }}>
+          <Pressable
+            style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, paddingVertical: 16, gap: 14, borderBottomWidth: 1, borderBottomColor: Colors.surface[100] }}
+            onPress={() => router.push('/(restaurant)/application-status' as any)}
+          >
+            <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: Colors.surface[100], alignItems: 'center', justifyContent: 'center' }}>
+              <BadgeCheck size={18} color={Colors.empire.black} />
+            </View>
+            <Text style={{ flex: 1, fontWeight: '600', color: Colors.empire.black, fontSize: 14 }}>Application Status</Text>
+            <ChevronRight size={16} color="#bbb" />
+          </Pressable>
           <Pressable
             style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, paddingVertical: 16, gap: 14 }}
             onPress={() => router.push('/(restaurant)/change-password')}

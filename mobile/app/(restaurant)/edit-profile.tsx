@@ -15,6 +15,7 @@ import { ArrowLeft } from 'lucide-react-native';
 import {
   Button,
   Input,
+  EmpireSwitch as Switch,
   Skeleton,
   Card,
   CardBody,
@@ -27,12 +28,18 @@ interface FormState {
   address: string;
   deliveryFee: string;
   minOrder: string;
+  description: string;
+  isOpen: boolean;
+  deliveryTimeMin: string;
+  deliveryTimeMax: string;
 }
 
 interface FormErrors {
   name?: string;
   deliveryFee?: string;
   minOrder?: string;
+  deliveryTimeMin?: string;
+  deliveryTimeMax?: string;
 }
 
 export default function EditRestaurantProfile() {
@@ -44,6 +51,10 @@ export default function EditRestaurantProfile() {
     address: '',
     deliveryFee: '',
     minOrder: '',
+    description: '',
+    isOpen: true,
+    deliveryTimeMin: '',
+    deliveryTimeMax: '',
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [initialised, setInitialised] = useState(false);
@@ -60,6 +71,10 @@ export default function EditRestaurantProfile() {
         address: profile.address ?? '',
         deliveryFee: profile.deliveryFee != null ? String(profile.deliveryFee) : '',
         minOrder: profile.minOrder != null ? String(profile.minOrder) : '',
+        description: profile.description ?? '',
+        isOpen: profile.isOpen ?? true,
+        deliveryTimeMin: profile.deliveryTimeMin != null ? String(profile.deliveryTimeMin) : '',
+        deliveryTimeMax: profile.deliveryTimeMax != null ? String(profile.deliveryTimeMax) : '',
       });
       setInitialised(true);
     }
@@ -72,6 +87,10 @@ export default function EditRestaurantProfile() {
         address: form.address.trim(),
         deliveryFee: parseFloat(form.deliveryFee) || 0,
         minOrder: parseFloat(form.minOrder) || 0,
+        description: form.description.trim(),
+        isOpen: form.isOpen,
+        deliveryTimeMin: parseInt(form.deliveryTimeMin, 10) || 0,
+        deliveryTimeMax: parseInt(form.deliveryTimeMax, 10) || 0,
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['restaurant', 'profile'] });
@@ -93,6 +112,14 @@ export default function EditRestaurantProfile() {
     if (form.minOrder !== '') {
       const min = parseFloat(form.minOrder);
       if (isNaN(min) || min < 0) next.minOrder = 'Minimum order must be a valid non-negative number.';
+    }
+    if (form.deliveryTimeMin !== '') {
+      const v = parseInt(form.deliveryTimeMin, 10);
+      if (isNaN(v) || v < 0) next.deliveryTimeMin = 'Must be a valid non-negative number.';
+    }
+    if (form.deliveryTimeMax !== '') {
+      const v = parseInt(form.deliveryTimeMax, 10);
+      if (isNaN(v) || v < 0) next.deliveryTimeMax = 'Must be a valid non-negative number.';
     }
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -174,6 +201,15 @@ export default function EditRestaurantProfile() {
                 autoCapitalize="words"
               />
 
+              <Input
+                label="Description"
+                placeholder="Tell customers what makes your restaurant great"
+                value={form.description}
+                onChangeText={(v) => setForm((f) => ({ ...f, description: v }))}
+                multiline
+                numberOfLines={3}
+              />
+
               <View className="flex-row gap-3">
                 <View className="flex-1">
                   <Input
@@ -201,6 +237,43 @@ export default function EditRestaurantProfile() {
                     error={errors.minOrder}
                   />
                 </View>
+              </View>
+
+              <View className="flex-row gap-3">
+                <View className="flex-1">
+                  <Input
+                    label="Min Delivery Time (min)"
+                    placeholder="e.g. 25"
+                    value={form.deliveryTimeMin}
+                    onChangeText={(v) => {
+                      setForm((f) => ({ ...f, deliveryTimeMin: v }));
+                      setErrors((e) => ({ ...e, deliveryTimeMin: undefined }));
+                    }}
+                    keyboardType="number-pad"
+                    error={errors.deliveryTimeMin}
+                  />
+                </View>
+                <View className="flex-1">
+                  <Input
+                    label="Max Delivery Time (min)"
+                    placeholder="e.g. 40"
+                    value={form.deliveryTimeMax}
+                    onChangeText={(v) => {
+                      setForm((f) => ({ ...f, deliveryTimeMax: v }));
+                      setErrors((e) => ({ ...e, deliveryTimeMax: undefined }));
+                    }}
+                    keyboardType="number-pad"
+                    error={errors.deliveryTimeMax}
+                  />
+                </View>
+              </View>
+
+              <View className="mb-5 mt-1">
+                <Switch
+                  checked={form.isOpen}
+                  onChange={(v: boolean) => setForm((f) => ({ ...f, isOpen: v }))}
+                  label={form.isOpen ? 'Open for orders' : 'Closed for orders'}
+                />
               </View>
 
               <Button

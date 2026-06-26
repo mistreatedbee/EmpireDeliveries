@@ -53,6 +53,7 @@ export default function RestaurantLayout() {
       <Tabs.Screen name="edit-item" options={{ href: null }} />
       <Tabs.Screen name="change-password" options={{ href: null }} />
       <Tabs.Screen name="edit-profile" options={{ href: null }} />
+      <Tabs.Screen name="application-status" options={{ href: null }} />
     </Tabs>
   );
 }

@@ -88,9 +88,26 @@ export const adminService = {
   },
 };
 
+export interface MyApplicationStatus {
+  role: string;
+  approvalStatus: 'pending' | 'approved' | 'rejected' | 'suspended';
+  driverApplication: {
+    status: 'pending' | 'approved' | 'rejected';
+    submittedAt: string;
+    rejectionReason?: string;
+    vehicleType?: string;
+  } | null;
+  restaurantApplication: {
+    status: 'pending' | 'approved' | 'rejected';
+    submittedAt: string;
+    rejectionReason?: string;
+    tradingName?: string;
+  } | null;
+}
+
 export const applicationsService = {
-  async getMyApplication() {
-    const res = await api.get<never, ApiResponse<unknown>>('/applications/me');
+  async getMyApplication(): Promise<MyApplicationStatus> {
+    const res = await api.get<never, ApiResponse<MyApplicationStatus>>('/applications/me');
     return res.data;
   },
 

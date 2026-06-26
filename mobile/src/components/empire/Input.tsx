@@ -54,7 +54,7 @@ export function Input({
       )}
 
       <View
-        className="flex-row items-center rounded-md px-4 h-11"
+        className={`flex-row rounded-md px-4 ${props.multiline ? 'items-start py-2.5' : 'items-center h-11'}`}
         style={{ backgroundColor: T.surface2, borderWidth: focused || error ? 1.5 : 1, borderColor }}
       >
         {icon && <View className="mr-2">{icon}</View>}
@@ -63,7 +63,12 @@ export function Input({
           placeholderTextColor={T.textTer}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          style={[{ fontFamily: Fonts.body, color: T.text }, style as object]}
+          textAlignVertical={props.multiline ? 'top' : 'center'}
+          style={[
+            { fontFamily: Fonts.body, color: T.text },
+            props.multiline ? { minHeight: 22 * (props.numberOfLines ?? 3) } : null,
+            style as object,
+          ]}
           {...props}
         />
         {rightIcon && (

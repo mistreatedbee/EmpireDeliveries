@@ -94,6 +94,15 @@ export default function EditMenuItem() {
         setImageUri(existingItem.image);
         setImageUrl(existingItem.image);
       }
+      if (existingItem.addonGroups?.length) {
+        setAddonGroups(
+          existingItem.addonGroups.map((g) => ({
+            name: g.name,
+            required: g.required,
+            addons: g.addons.map((a) => ({ name: a.name, price: String(a.price) })),
+          }))
+        );
+      }
       setInitialised(true);
     }
   }, [existingItem, initialised]);
@@ -200,8 +209,7 @@ export default function EditMenuItem() {
         categoryId,
         imageUrl,
         isAvailable,
-        // @ts-ignore — extended payload
-        addonGroups: addonGroupsPayload.length > 0 ? addonGroupsPayload : undefined,
+        addonGroups: addonGroupsPayload,
       });
     },
     onSuccess: () => {

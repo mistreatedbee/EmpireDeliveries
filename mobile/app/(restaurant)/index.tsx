@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, Switch } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { TrendingUp, ShoppingBag, Clock, CheckCircle } from 'lucide-react-native';
 import { useAuthStore } from '@/stores/authStore';
@@ -10,6 +10,16 @@ import { Colors } from '@/constants/colors';
 export default function RestaurantDashboard() {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
+
+  const { data: profile } = useQuery({
+    queryKey: ['restaurant', 'profile'],
+    queryFn: restaurantManagementService.getProfile,
+  });
+
+  const toggleOpenMutation = useMutation({
+    mutationFn: (isOpen: boolean) => restaurantManagementService.updateProfile({ isOpen }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['restaurant', 'profile'] }),
+  });
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['restaurant', 'stats'],
@@ -42,9 +52,28 @@ export default function RestaurantDashboard() {
 
   return (
     <View style={{ flex: 1, backgroundColor: Colors.surface[100] }}>
-      <View style={{ backgroundColor: Colors.empire.black, paddingHorizontal: 20, paddingTop: 56, paddingBottom: 16 }}>
-        <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>Welcome back,</Text>
-        <Text style={{ color: '#fff', fontSize: 20, fontWeight: '900' }}>{user?.firstName ?? 'Restaurant'}</Text>
+      <View style={{ backgroundColor: Colors.empire.black, paddingHorizontal: 20, paddingTop: 56, paddingBottom: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <View>
+          <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>Welcome back,</Text>
+          <Text style={{ color: '#fff', fontSize: 20, fontWeight: '900' }}>{user?.firstName ?? 'Restaurant'}</Text>
+        </View>
+        {profile && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 }}>
+            <Text style={{ color: profile.isOpen ? Colors.empire.success : '#aaa', fontWeight: '700', fontSize: 12 }}>
+              {profile.isOpen ? 'Open' : 'Closed'}
+            </Text>
+            {toggleOpenMutation.isPending ? (
+              <ActivityIndicator size="small" color={Colors.gold[500]} />
+            ) : (
+              <Switch
+                value={profile.isOpen}
+                onValueChange={(v) => toggleOpenMutation.mutate(v)}
+                trackColor={{ false: '#444', true: Colors.empire.success + '88' }}
+                thumbColor={profile.isOpen ? Colors.empire.success : '#aaa'}
+              />
+            )}
+          </View>
+        )}
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
