@@ -9,6 +9,7 @@ interface CartStore {
   restaurantId: string | null;
   restaurantName: string | null;
   coupon: CouponValidation | null;
+  loyaltyPointsToRedeem: number;
   // Computed
   itemCount: number;
   subtotal: number;
@@ -20,6 +21,7 @@ interface CartStore {
   updateQuantity: (cartItemId: string, quantity: number) => void;
   applyCoupon: (coupon: CouponValidation) => void;
   clearCoupon: () => void;
+  setLoyaltyPoints: (pts: number) => void;
   clearCart: () => void;
   clearForNewRestaurant: (restaurantId: string, restaurantName: string) => void;
 }
@@ -55,6 +57,7 @@ export const useCartStore = create<CartStore>()(
       restaurantId: null,
       restaurantName: null,
       coupon: null,
+      loyaltyPointsToRedeem: 0,
       itemCount: 0,
       subtotal: 0,
       discount: 0,
@@ -114,10 +117,12 @@ export const useCartStore = create<CartStore>()(
         set({ coupon: null, discount, total, subtotal });
       },
 
-      clearCart: () => set({ items: [], restaurantId: null, restaurantName: null, coupon: null, itemCount: 0, subtotal: 0, discount: 0, total: 0 }),
+      setLoyaltyPoints: (pts) => set({ loyaltyPointsToRedeem: Math.max(0, pts) }),
+
+      clearCart: () => set({ items: [], restaurantId: null, restaurantName: null, coupon: null, loyaltyPointsToRedeem: 0, itemCount: 0, subtotal: 0, discount: 0, total: 0 }),
 
       clearForNewRestaurant: (restaurantId, restaurantName) => {
-        set({ items: [], restaurantId, restaurantName, coupon: null, itemCount: 0, subtotal: 0, discount: 0, total: 0 });
+        set({ items: [], restaurantId, restaurantName, coupon: null, loyaltyPointsToRedeem: 0, itemCount: 0, subtotal: 0, discount: 0, total: 0 });
       },
     }),
     {

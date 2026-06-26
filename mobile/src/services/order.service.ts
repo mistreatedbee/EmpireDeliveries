@@ -32,8 +32,8 @@ export const orderService = {
     return res.data;
   },
 
-  async rate(id: string, rating: number, comment?: string): Promise<Order> {
-    const res = await api.post<never, ApiResponse<Order>>(`/orders/${id}/rate`, { rating, comment });
+  async rate(id: string, rating: number, review?: string): Promise<Order> {
+    const res = await api.post<never, ApiResponse<Order>>(`/orders/${id}/rate`, { rating, review });
     return res.data;
   },
 

@@ -3,7 +3,7 @@ import { View, Text } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMutation } from '@tanstack/react-query';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
-import { Button, Input } from '@/components/ui';
+import { Button, Input } from '@/components/empire';
 import { KeyboardWrapper } from '@/components/layout/KeyboardWrapper';
 import { authService } from '@/services/auth.service';
 import { useUIStore } from '@/stores/uiStore';
@@ -19,6 +19,7 @@ export default function ResetPasswordScreen() {
 
   const mutation = useMutation({
     mutationFn: () => authService.resetPassword({ token: token ?? '', newPassword: password }),
+    // token is now the InsForge reset token from exchangeResetCode (not email:otp)
     onSuccess: () => {
       showToast('Password reset successfully', 'success');
       router.replace('/(auth)/login');
@@ -43,7 +44,7 @@ export default function ResetPasswordScreen() {
         <Input label="New password" value={password} onChangeText={setPassword} secureTextEntry placeholder="Min. 8 characters" error={errors.password} />
         <Input label="Confirm password" value={confirm} onChangeText={setConfirm} secureTextEntry placeholder="Repeat password" error={errors.confirm} />
 
-        <Button size="lg" onPress={() => validate() && mutation.mutate()} loading={mutation.isPending} style={{ marginTop: 8 }}>
+        <Button variant="primary" size="lg" fullWidth onPress={() => validate() && mutation.mutate()} loading={mutation.isPending} style={{ marginTop: 8 }}>
           Reset Password
         </Button>
       </KeyboardWrapper>

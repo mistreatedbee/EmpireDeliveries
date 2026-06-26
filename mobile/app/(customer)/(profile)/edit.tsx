@@ -5,7 +5,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { Header } from '@/components/layout/Header';
 import { KeyboardWrapper } from '@/components/layout/KeyboardWrapper';
-import { Button, Input } from '@/components/ui';
+import { Button, Input } from '@/components/empire';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 import api from '@/services/api';
@@ -44,8 +44,8 @@ export default function EditProfileScreen() {
         <Input label="First Name" value={form.firstName} onChangeText={set('firstName')} autoCapitalize="words" />
         <Input label="Last Name" value={form.lastName} onChangeText={set('lastName')} autoCapitalize="words" />
         <Input label="Phone Number" value={form.phone} onChangeText={set('phone')} keyboardType="phone-pad" />
-        <Input label="Email" value={user?.email ?? ''} editable={false} hint="Email cannot be changed" />
-        <Button variant="gold" size="lg" onPress={() => mutation.mutate()} loading={mutation.isPending} style={{ marginTop: 8 }}>
+        <Input label="Email" value={user?.email ?? ''} editable={false} helperText="Email cannot be changed" />
+        <Button variant="primary" size="lg" fullWidth onPress={() => mutation.mutate()} loading={mutation.isPending} style={{ marginTop: 8 }}>
           Save Changes
         </Button>
       </KeyboardWrapper>

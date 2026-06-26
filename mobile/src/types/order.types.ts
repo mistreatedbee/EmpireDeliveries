@@ -122,6 +122,7 @@ export interface CreateOrderPayload {
   paymentMethod: string;
   couponCode?: string;
   deliveryNotes?: string;
+  loyaltyPointsToRedeem?: number;
 }
 
 export interface CouponValidation {

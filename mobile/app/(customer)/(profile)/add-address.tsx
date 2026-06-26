@@ -5,7 +5,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { Header } from '@/components/layout/Header';
 import { KeyboardWrapper } from '@/components/layout/KeyboardWrapper';
-import { Button, Input } from '@/components/ui';
+import { Button, Input } from '@/components/empire';
 import { userService } from '@/services/user.service';
 import { queryKeys } from '@/constants/queryKeys';
 import { useUIStore } from '@/stores/uiStore';
@@ -72,7 +72,7 @@ export default function AddAddressScreen() {
         <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
           {labels.map((l) => (
             <View key={l} style={{ flex: 1 }}>
-              <Button variant={label === l ? 'dark' : 'outline'} size="sm" fullWidth onPress={() => setLabel(l)}>
+              <Button variant={label === l ? 'primary' : 'secondary'} size="sm" fullWidth onPress={() => setLabel(l)}>
                 {l.charAt(0).toUpperCase() + l.slice(1)}
               </Button>
             </View>
@@ -83,7 +83,7 @@ export default function AddAddressScreen() {
         <Input label="City" value={form.city} onChangeText={set('city')} placeholder="Johannesburg" />
         <Input label="Province" value={form.province} onChangeText={set('province')} placeholder="Gauteng" />
         <Input label="Postal Code" value={form.postalCode} onChangeText={set('postalCode')} keyboardType="number-pad" placeholder="2196" />
-        <Button variant="gold" size="lg" onPress={save} loading={mutation.isPending} style={{ marginTop: 8 }}>
+        <Button variant="primary" size="lg" onPress={save} loading={mutation.isPending} style={{ marginTop: 8 }}>
           Save Address
         </Button>
       </KeyboardWrapper>

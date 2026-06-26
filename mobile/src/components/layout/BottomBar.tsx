@@ -21,7 +21,7 @@ export function BottomBar({ label, price, onPress, loading, disabled, badge }: B
       className="bg-white border-t border-surface-200 px-4"
       style={{ paddingBottom: insets.bottom + 12, paddingTop: 12 }}
     >
-      <Button variant="gold" size="lg" onPress={onPress} loading={loading} disabled={disabled}>
+      <Button variant="primary" size="lg" onPress={onPress} loading={loading} disabled={disabled}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <Text className="text-empire-black font-bold text-base">{label}</Text>
           {price !== undefined && <PriceText amount={price} size="md" />}

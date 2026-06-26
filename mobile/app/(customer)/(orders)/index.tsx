@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, FlatList, Pressable, Image, ActivityIndicator, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { RefreshCw } from 'lucide-react-native';
+import { RefreshCw, Star, RotateCcw } from 'lucide-react-native';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -22,9 +22,10 @@ const STATUS_MAP: Record<Tab, string[]> = {
   cancelled: ['cancelled'],
 };
 
-function OrderCard({ order, onCancel }: { order: Order; onCancel: () => void }) {
+function OrderCard({ order, onCancel, onRate, onReorder }: { order: Order; onCancel: () => void; onRate?: () => void; onReorder?: () => void }) {
   const isActive = STATUS_MAP.active.includes(order.status);
   const canCancel = order.status === 'placed';
+  const canReorder = order.status === 'delivered' || order.status === 'cancelled';
 
   return (
     <Pressable
@@ -39,7 +40,7 @@ function OrderCard({ order, onCancel }: { order: Order; onCancel: () => void }) 
         </View>
         <Badge
           label={formatOrderStatus(order.status)}
-          variant={order.status === 'delivered' ? 'success' : order.status === 'cancelled' ? 'danger' : 'default'}
+          variant={order.status === 'delivered' ? 'success' : order.status === 'cancelled' ? 'danger' : 'outline'}
           size="sm"
         />
       </View>
@@ -64,6 +65,24 @@ function OrderCard({ order, onCancel }: { order: Order; onCancel: () => void }) 
             </Pressable>
           )}
         </View>
+      )}
+      {order.status === 'delivered' && !order.rating && onRate && (
+        <Pressable
+          onPress={onRate}
+          style={{ marginTop: 10, backgroundColor: T.goldBg, borderRadius: 10, padding: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: T.gold }}
+        >
+          <Star size={14} color={T.gold} />
+          <Text style={{ color: T.gold, fontWeight: '700', fontSize: 13 }}>Rate this order</Text>
+        </Pressable>
+      )}
+      {canReorder && onReorder && (
+        <Pressable
+          onPress={onReorder}
+          style={{ marginTop: 8, backgroundColor: T.surface, borderRadius: 10, padding: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: T.border }}
+        >
+          <RotateCcw size={14} color={T.textSec} />
+          <Text style={{ color: T.textSec, fontWeight: '700', fontSize: 13 }}>Reorder</Text>
+        </Pressable>
       )}
     </Pressable>
   );
@@ -122,13 +141,20 @@ export default function OrdersScreen() {
           title={activeTab === 'active' ? 'No active orders' : activeTab === 'completed' ? 'No completed orders' : 'No cancelled orders'}
           subtitle="Your orders will appear here"
           actionLabel={activeTab === 'active' ? 'Order Now' : undefined}
-          onAction={activeTab === 'active' ? () => router.replace('/(customer)') : undefined}
+          onAction={activeTab === 'active' ? () => router.replace('/(customer)' as any) : undefined}
         />
       ) : (
         <FlatList
           data={orders}
           keyExtractor={(o) => o.id}
-          renderItem={({ item }) => <OrderCard order={item} onCancel={() => handleCancel(item)} />}
+          renderItem={({ item }) => (
+            <OrderCard
+              order={item}
+              onCancel={() => handleCancel(item)}
+              onRate={() => router.push({ pathname: '/(modals)/rate-order', params: { orderId: item.id } })}
+              onReorder={() => router.push(`/(customer)/(home)/restaurant/${item.restaurantId}` as any)}
+            />
+          )}
           contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
           showsVerticalScrollIndicator={false}
         />

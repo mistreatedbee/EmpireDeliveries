@@ -50,6 +50,7 @@ export const useLocationStore = create<LocationStore>()(
       name: 'empire-location',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
+        currentLocation: state.currentLocation,
         selectedAddress: state.selectedAddress,
         savedAddresses: state.savedAddresses,
         permissionStatus: state.permissionStatus,

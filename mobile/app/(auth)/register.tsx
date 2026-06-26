@@ -3,7 +3,7 @@ import { View, Text, Pressable, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { useMutation } from '@tanstack/react-query';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
-import { Button, Input } from '@/components/ui';
+import { Button, Input } from '@/components/empire';
 import { authService } from '@/services/auth.service';
 import { useUIStore } from '@/stores/uiStore';
 import { isValidEmail, isValidSAPhone, normalizeSAPhone } from '@/utils/validators';
@@ -24,11 +24,27 @@ export default function RegisterScreen() {
         phone: normalizeSAPhone(form.phone),
       }),
     onSuccess: () => {
-      router.push({ pathname: '/(auth)/otp', params: { phone: normalizeSAPhone(form.phone), purpose: 'registration' } });
+      router.push({
+        pathname: '/(auth)/otp',
+        params: {
+          email: form.email.trim().toLowerCase(),
+          purpose: 'registration',
+          firstName: form.firstName.trim(),
+          lastName: form.lastName.trim(),
+          phone: normalizeSAPhone(form.phone),
+          role: 'customer',
+        },
+      });
     },
     onError: (error: AppError) => {
-      if (error.field) setErrors((e) => ({ ...e, [error.field!]: error.message }));
-      else showToast(error.message, 'error');
+      if (error.message === 'User already exists') {
+        showToast('An account with this email already exists. Please log in instead.', 'error');
+        router.push('/(auth)/login');
+      } else if (error.field) {
+        setErrors((e) => ({ ...e, [error.field!]: error.message }));
+      } else {
+        showToast(error.message, 'error');
+      }
     },
   });
 
@@ -40,7 +56,8 @@ export default function RegisterScreen() {
     if (!form.lastName.trim()) e.lastName = 'Last name is required';
     if (!isValidEmail(form.email)) e.email = 'Please enter a valid email address';
     if (!isValidSAPhone(form.phone)) e.phone = 'Please enter a valid South African phone number';
-    if (form.password.length < 8) e.password = 'Password must be at least 8 characters';
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(form.password))
+      e.password = 'Min. 8 characters with uppercase, lowercase, and a number';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -66,7 +83,7 @@ export default function RegisterScreen() {
 
         <Input label="Email address" value={form.email} onChangeText={set('email')} keyboardType="email-address" autoCapitalize="none" placeholder="you@example.com" error={errors.email} />
 
-        <Input label="Phone number" value={form.phone} onChangeText={set('phone')} keyboardType="phone-pad" placeholder="+27 82 000 0000" error={errors.phone} hint="South African number required" />
+        <Input label="Phone number" value={form.phone} onChangeText={set('phone')} keyboardType="phone-pad" placeholder="+27 82 000 0000" error={errors.phone} helperText="South African number required" />
 
         <Input
           label="Password"
@@ -79,7 +96,7 @@ export default function RegisterScreen() {
           onRightIconPress={() => setShowPassword((p) => !p)}
         />
 
-        <Button size="lg" onPress={() => validate() && registerMutation.mutate()} loading={registerMutation.isPending} style={{ marginTop: 8 }}>
+        <Button variant="primary" size="lg" fullWidth onPress={() => validate() && registerMutation.mutate()} loading={registerMutation.isPending} style={{ marginTop: 8 }}>
           Create Account
         </Button>
 

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { ScrollView, View, Text, Image, Pressable } from 'react-native';
+import { ScrollView, View, Text, Image, Pressable, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
-import { Clock, Tag, Check } from 'lucide-react-native';
+import { Clock, Tag, Heart, Star } from 'lucide-react-native';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -9,6 +10,9 @@ import { useRestaurantDetail, useMenuItems } from '@/hooks/useRestaurantDetail';
 import { useCartStore } from '@/stores/cartStore';
 import { useUIStore } from '@/stores/uiStore';
 import { MenuItem, MenuCategory } from '@/types/restaurant.types';
+import { restaurantService } from '@/services/restaurant.service';
+import { userService } from '@/services/user.service';
+import { queryKeys } from '@/constants/queryKeys';
 import { T } from '@/constants/colors';
 import { formatPrice } from '@/utils/formatters';
 
@@ -39,10 +43,34 @@ function MenuItemRow({ item, onAdd }: { item: MenuItem; onAdd: (item: MenuItem) 
 export default function RestaurantDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState<'menu' | 'reviews'>('menu');
+  const queryClient = useQueryClient();
+
   const { data: restaurant, isLoading: loadingRestaurant } = useRestaurantDetail(id);
   const { data: menuCategories, isLoading: loadingMenu } = useMenuItems(id);
   const { addItem, itemCount, restaurantId, restaurantName } = useCartStore();
   const { showToast } = useUIStore();
+
+  // Reviews
+  const { data: reviewsPage, isLoading: reviewsLoading } = useQuery({
+    queryKey: queryKeys.restaurants.reviews(id),
+    queryFn: () => restaurantService.getReviews(id),
+    enabled: activeTab === 'reviews' && !!id,
+  });
+
+  // Favourites state (derived from cached list)
+  const { data: favourites } = useQuery({
+    queryKey: ['user', 'favourites'],
+    queryFn: userService.getFavourites,
+    enabled: !!id,
+  });
+  const isFavourited = Array.isArray(favourites)
+    ? (favourites as Array<{ id: string }>).some((r) => r.id === id)
+    : false;
+
+  const favouriteMutation = useMutation({
+    mutationFn: () => restaurantService.toggleFavourite(id),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['user', 'favourites'] }),
+  });
 
   const handleAddItem = (item: MenuItem) => {
     if (restaurantId && restaurantId !== id) {
@@ -71,11 +99,24 @@ export default function RestaurantDetailScreen() {
         {/* Hero */}
         <View style={{ position: 'relative' }}>
           <Image source={{ uri: restaurant.coverImage }} style={{ width: '100%', height: 220, backgroundColor: T.surface }} />
+          {/* Back button */}
           <Pressable
             onPress={() => router.back()}
             style={{ position: 'absolute', top: 48, left: 16, backgroundColor: 'rgba(255,255,255,0.92)', borderRadius: 20, width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: T.border }}
           >
             <Text style={{ color: T.text, fontSize: 18 }}>←</Text>
+          </Pressable>
+          {/* Favourite heart button */}
+          <Pressable
+            onPress={() => favouriteMutation.mutate()}
+            disabled={favouriteMutation.isPending}
+            style={{ position: 'absolute', top: 48, right: 16, backgroundColor: 'rgba(255,255,255,0.92)', borderRadius: 20, width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: T.border }}
+          >
+            <Heart
+              size={20}
+              color={isFavourited ? '#E53935' : T.textTer}
+              fill={isFavourited ? '#E53935' : 'transparent'}
+            />
           </Pressable>
           {!restaurant.isOpen && (
             <View style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(255,255,255,0.6)', alignItems: 'center', justifyContent: 'center' }}>
@@ -139,9 +180,42 @@ export default function RestaurantDetailScreen() {
           </View>
         )}
 
+        {/* Reviews */}
         {activeTab === 'reviews' && (
           <View style={{ padding: 20 }}>
-            <Text style={{ color: T.textTer, textAlign: 'center', marginTop: 40 }}>Reviews coming soon</Text>
+            {reviewsLoading && (
+              <ActivityIndicator color={T.action} style={{ marginTop: 40 }} />
+            )}
+            {!reviewsLoading && (!reviewsPage?.data || reviewsPage.data.length === 0) && (
+              <Text style={{ color: T.textTer, textAlign: 'center', marginTop: 40 }}>No reviews yet</Text>
+            )}
+            {!reviewsLoading && (reviewsPage?.data ?? []).map((r) => {
+              // Backend may return firstName/lastName or userName — handle both shapes
+              const raw = r as typeof r & { firstName?: string; lastName?: string; review?: string };
+              const displayName = r.userName || `${raw.firstName ?? ''} ${raw.lastName ?? ''}`.trim() || 'Customer';
+              const reviewText = r.comment || raw.review || '';
+              return (
+                <View
+                  key={r.id}
+                  style={{ backgroundColor: T.bg, borderRadius: 12, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: T.border }}
+                >
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <Text style={{ fontWeight: '700', color: T.text, flex: 1, marginRight: 8 }}>{displayName}</Text>
+                    <View style={{ flexDirection: 'row', gap: 2 }}>
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <Star key={n} size={13} color={T.text} fill={n <= r.rating ? T.text : 'transparent'} />
+                      ))}
+                    </View>
+                  </View>
+                  {reviewText ? (
+                    <Text style={{ color: T.textSec, fontSize: 13, lineHeight: 19 }}>{reviewText}</Text>
+                  ) : null}
+                  <Text style={{ color: T.textTer, fontSize: 11, marginTop: 6 }}>
+                    {new Date(r.createdAt).toLocaleDateString('en-ZA', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </Text>
+                </View>
+              );
+            })}
           </View>
         )}
 

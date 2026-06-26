@@ -25,10 +25,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       NSLocationAlwaysUsageDescription:
         'Empire Deliveries uses your location to track your delivery in real time.',
       NSCameraUsageDescription:
-        'Empire Deliveries needs camera access to upload your profile photo.',
-    },
-    config: {
-      googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY,
+        'Empire Deliveries needs camera access to capture proof of delivery and upload photos.',
+      NSPhotoLibraryUsageDescription:
+        'Empire Deliveries needs photo library access for proof of delivery.',
     },
     associatedDomains: ['applinks:empiredeliveries.co.za'],
   },
@@ -46,11 +45,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       'RECEIVE_BOOT_COMPLETED',
       'VIBRATE',
     ],
-    config: {
-      googleMaps: {
-        apiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY,
-      },
-    },
     intentFilters: [
       {
         action: 'VIEW',
@@ -88,7 +82,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
           'Allow Empire Deliveries to use your location.',
       },
     ],
+    [
+      'expo-image-picker',
+      {
+        photosPermission: 'Empire Deliveries needs photo library access for proof of delivery.',
+        cameraPermission: 'Empire Deliveries needs camera access to capture proof of delivery.',
+      },
+    ],
     'expo-font',
+    '@maplibre/maplibre-react-native',
   ],
   experiments: {
     typedRoutes: true,

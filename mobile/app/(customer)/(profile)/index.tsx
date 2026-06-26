@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Pencil, MapPin, CreditCard, Award, Settings, HelpCircle, Lock, LogOut, ChevronRight } from 'lucide-react-native';
+import { Pencil, MapPin, CreditCard, Wallet, Award, Settings, HelpCircle, Lock, LogOut, ChevronRight, Heart, Shield } from 'lucide-react-native';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { Avatar } from '@/components/ui/Avatar';
 import { useAuthStore } from '@/stores/authStore';
@@ -44,10 +44,13 @@ export default function ProfileScreen() {
     { Icon: Pencil, label: 'Edit Profile', subtitle: 'Name, email, phone', onPress: () => router.push('/(customer)/(profile)/edit') },
     { Icon: MapPin, label: 'Saved Addresses', subtitle: 'Manage delivery locations', onPress: () => router.push('/(customer)/(profile)/addresses') },
     { Icon: CreditCard, label: 'Payment Methods', subtitle: 'Cards and wallets', onPress: () => router.push('/(customer)/(profile)/payment-methods') },
-    { Icon: Award, label: 'Loyalty & Rewards', subtitle: 'Empire Points balance', onPress: () => {} },
+    { Icon: Wallet, label: 'Empire Wallet', subtitle: 'Balance and top-ups', onPress: () => router.push('/(customer)/(profile)/wallet') },
+    { Icon: Heart, label: 'Favourites', subtitle: 'Saved restaurants', onPress: () => router.push('/(customer)/(profile)/favourites') },
+    { Icon: Award, label: 'Loyalty & Rewards', subtitle: 'Empire Points balance', onPress: () => router.push('/(customer)/(profile)/loyalty') },
     { Icon: Settings, label: 'Settings', subtitle: 'Preferences and notifications', onPress: () => router.push('/(customer)/(profile)/settings') },
-    { Icon: HelpCircle, label: 'Help & Support', onPress: () => {} },
-    { Icon: Lock, label: 'Privacy Policy', onPress: () => {} },
+    { Icon: Lock, label: 'Change Password', subtitle: 'Update your account password', onPress: () => router.push('/(customer)/(profile)/change-password') },
+    { Icon: HelpCircle, label: 'Help & Support', onPress: () => router.push('/(customer)/(profile)/support') },
+    { Icon: Shield, label: 'Privacy Policy', onPress: () => router.push('/(customer)/(profile)/privacy') },
     { Icon: LogOut, label: 'Sign Out', onPress: () => logoutMutation.mutate(), danger: true },
   ];
 

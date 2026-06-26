@@ -2,13 +2,13 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUIStore } from '@/stores/uiStore';
-import { Colors } from '@/constants/colors';
+import { T, Fonts, Shadows } from '@/constants/colors';
 
 const TYPE_COLORS = {
-  success: Colors.empire.success,
-  error: Colors.empire.error,
-  warning: Colors.empire.warning,
-  info: Colors.gold[500],
+  success: T.success,
+  error: T.danger,
+  warning: T.warning,
+  info: T.info,
 };
 
 export default function Toast() {
@@ -47,20 +47,18 @@ export default function Toast() {
     >
       <View
         style={{
-          backgroundColor: Colors.empire.charcoal,
+          backgroundColor: T.surface,
+          borderWidth: 1,
+          borderColor: T.border,
           borderLeftWidth: 4,
           borderLeftColor: TYPE_COLORS[toast.type],
-          borderRadius: 12,
+          borderRadius: 16,
           paddingHorizontal: 16,
           paddingVertical: 12,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.2,
-          shadowRadius: 8,
-          elevation: 8,
+          ...Shadows.md,
         }}
       >
-        <Text style={{ color: '#FFFFFF', fontWeight: '600', fontSize: 14 }}>{toast.message}</Text>
+        <Text style={{ fontFamily: Fonts.bodySemibold, color: T.text, fontSize: 14 }}>{toast.message}</Text>
       </View>
     </Animated.View>
   );

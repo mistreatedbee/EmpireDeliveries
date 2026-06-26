@@ -1,6 +1,20 @@
 import api from './api';
 import { ApiResponse } from '@/types/api.types';
 
+export interface LoyaltyData {
+  balance: number;
+  tier: 'Bronze' | 'Silver' | 'Gold';
+  nextTier: string | null;
+  pointsToNextTier: number;
+  recentTransactions: Array<{
+    id: string;
+    points: number;
+    type: 'earned' | 'redeemed' | 'bonus';
+    description: string;
+    createdAt: string;
+  }>;
+}
+
 export interface BackendAddress {
   id: string;
   label: string;
@@ -58,6 +72,11 @@ export const userService = {
 
   async getFavourites() {
     const res = await api.get<never, ApiResponse<unknown[]>>('/users/favourites');
+    return res.data;
+  },
+
+  async getLoyalty(): Promise<LoyaltyData> {
+    const res = await api.get<never, ApiResponse<LoyaltyData>>('/users/loyalty');
     return res.data;
   },
 };

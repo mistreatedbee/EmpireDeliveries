@@ -2,10 +2,9 @@ import React, { useState } from 'react';
 import { View, Text, FlatList, Pressable, Image, TextInput, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { useMutation } from '@tanstack/react-query';
-import { Tag, X, CheckCircle } from 'lucide-react-native';
+import { Tag, X, CheckCircle, ShoppingCart } from 'lucide-react-native';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
-import { Button } from '@/components/ui/Button';
-import { EmptyState } from '@/components/ui/EmptyState';
+import { Button, EmptyState } from '@/components/empire';
 import { useCartStore } from '@/stores/cartStore';
 import { useUIStore } from '@/stores/uiStore';
 import { orderService } from '@/services/order.service';
@@ -75,7 +74,16 @@ export default function CartScreen() {
           </Pressable>
           <Text style={{ fontSize: 20, fontWeight: '900', color: T.text }}>Your Cart</Text>
         </View>
-        <EmptyState title="Your cart is empty" subtitle="Add items from a restaurant to get started" actionLabel="Browse Restaurants" onAction={() => router.replace('/(customer)')} />
+        <EmptyState
+          icon={<ShoppingCart size={28} color="#A3A3A3" />}
+          title="Your cart is empty"
+          description="Add items from a restaurant to get started"
+          action={
+            <Button variant="primary" size="sm" onPress={() => router.replace('/(customer)' as any)}>
+              Browse Restaurants
+            </Button>
+          }
+        />
       </ScreenWrapper>
     );
   }

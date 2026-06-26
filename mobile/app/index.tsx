@@ -18,7 +18,16 @@ export default function Index() {
   useEffect(() => {
     if (isLoading) return;
     if (isAuthenticated) {
-      router.replace('/(customer)');
+      const { user } = useAuthStore.getState();
+      if (user?.role === 'driver') {
+        router.replace('/(driver)');
+      } else if (user?.role === 'restaurant') {
+        router.replace('/(restaurant)');
+      } else if (user?.role === 'admin') {
+        router.replace('/(admin)');
+      } else {
+        router.replace('/(customer)' as any);
+      }
     } else {
       AsyncStorage.getItem('empire_onboarded').then((seen) => {
         if (seen) {

@@ -1,17 +1,8 @@
 import { Tabs, router } from 'expo-router';
 import React, { useEffect } from 'react';
-import { View, Text } from 'react-native';
+import { LayoutDashboard, TrendingUp, Wallet, User } from 'lucide-react-native';
 import { useAuthStore } from '@/stores/authStore';
 import { Colors } from '@/constants/colors';
-
-function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
-  return (
-    <View style={{ alignItems: 'center' }}>
-      <Text style={{ fontSize: focused ? 26 : 22, opacity: focused ? 1 : 0.5 }}>{emoji}</Text>
-      {focused && <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: Colors.gold[500], marginTop: 3 }} />}
-    </View>
-  );
-}
 
 export default function DriverLayout() {
   const { isAuthenticated } = useAuthStore();
@@ -37,10 +28,40 @@ export default function DriverLayout() {
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Dashboard', tabBarIcon: ({ focused }) => <TabIcon emoji="🚴" focused={focused} /> }} />
-      <Tabs.Screen name="earnings" options={{ title: 'Earnings', tabBarIcon: ({ focused }) => <TabIcon emoji="📈" focused={focused} /> }} />
-      <Tabs.Screen name="wallet" options={{ title: 'Wallet', tabBarIcon: ({ focused }) => <TabIcon emoji="💰" focused={focused} /> }} />
-      <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: ({ focused }) => <TabIcon emoji="👤" focused={focused} /> }} />
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Dashboard',
+          tabBarIcon: ({ focused, color }) => <LayoutDashboard size={22} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="earnings"
+        options={{
+          title: 'Earnings',
+          tabBarIcon: ({ color }) => <TrendingUp size={22} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="wallet"
+        options={{
+          title: 'Wallet',
+          tabBarIcon: ({ color }) => <Wallet size={22} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color }) => <User size={22} color={color} />,
+        }}
+      />
+      <Tabs.Screen name="delivery" options={{ href: null }} />
+      <Tabs.Screen name="bank-account" options={{ href: null }} />
+      <Tabs.Screen name="vehicle-details" options={{ href: null }} />
+      <Tabs.Screen name="settings" options={{ href: null }} />
+      <Tabs.Screen name="support" options={{ href: null }} />
+      <Tabs.Screen name="documents" options={{ href: null }} />
     </Tabs>
   );
 }

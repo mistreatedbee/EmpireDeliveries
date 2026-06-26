@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, Pressable, TextInput } from 'react-native';
 import { router } from 'expo-router';
-import { useMutation } from '@tanstack/react-query';
-import { MapPin, CreditCard, Building2, Layers, Wallet, Banknote, ChevronRight } from 'lucide-react-native';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { MapPin, CreditCard, Building2, Layers, Wallet, Banknote, ChevronRight, Award } from 'lucide-react-native';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/empire';
 import { useCartStore } from '@/stores/cartStore';
 import { useLocationStore } from '@/stores/locationStore';
 import { useOrderStore } from '@/stores/orderStore';
 import { useUIStore } from '@/stores/uiStore';
 import { orderService } from '@/services/order.service';
 import { paymentService } from '@/services/payment.service';
-import { T } from '@/constants/colors';
+import { userService } from '@/services/user.service';
+import { T, Colors } from '@/constants/colors';
 import { formatPrice } from '@/utils/formatters';
 
 const PAYMENT_METHODS = [
@@ -26,14 +27,26 @@ export default function CheckoutScreen() {
   const [selectedPayment, setSelectedPayment] = useState('payfast');
   const [deliveryNotes, setDeliveryNotes] = useState('');
 
-  const { items, restaurantId, subtotal, total, discount, coupon, clearCart } = useCartStore();
+  const { items, restaurantId, subtotal, total, discount, coupon, loyaltyPointsToRedeem, setLoyaltyPoints, clearCart } = useCartStore();
   const { selectedAddress } = useLocationStore();
   const { setActiveOrder } = useOrderStore();
   const { showToast } = useUIStore();
 
+  const { data: loyalty } = useQuery({
+    queryKey: ['user', 'loyalty'],
+    queryFn: () => userService.getLoyalty(),
+    staleTime: 30000,
+  });
+
+  const loyaltyBalance = loyalty?.balance ?? 0;
+  const loyaltyDiscount = (loyaltyPointsToRedeem / 100) * 10;
+  const QUICK_OPTIONS = [100, 200, loyaltyBalance >= 100 ? Math.floor(loyaltyBalance / 100) * 100 : 0]
+    .filter((v, i, arr) => v > 0 && arr.indexOf(v) === i && v <= loyaltyBalance)
+    .slice(0, 3);
+
   const deliveryFee = subtotal > 0 ? 35 : 0;
   const serviceFee = Math.round(subtotal * 0.05 * 100) / 100;
-  const grandTotal = total + deliveryFee + serviceFee;
+  const grandTotal = Math.max(0, total + deliveryFee + serviceFee - loyaltyDiscount);
 
   const placeOrder = useMutation({
     mutationFn: async () => {
@@ -50,6 +63,7 @@ export default function CheckoutScreen() {
         paymentMethod: selectedPayment,
         couponCode: coupon?.code,
         deliveryNotes: deliveryNotes || undefined,
+        loyaltyPointsToRedeem: loyaltyPointsToRedeem > 0 ? loyaltyPointsToRedeem : undefined,
       });
       return order;
     },
@@ -59,7 +73,7 @@ export default function CheckoutScreen() {
       else if (selectedPayment === 'ozow') await paymentService.initiateOzow(order.id);
       else if (selectedPayment === 'peach') await paymentService.initiatePeach(order.id);
       else if (selectedPayment === 'wallet') await paymentService.payWithWallet(order.id);
-      clearCart();
+      clearCart(); // clears loyaltyPointsToRedeem too
       router.replace('/(modals)/payment-success');
     },
     onError: (error: Error) => showToast(error.message, 'error'),
@@ -143,6 +157,44 @@ export default function CheckoutScreen() {
           })}
         </View>
 
+        {/* Empire Points */}
+        {loyaltyBalance >= 100 && (
+          <View style={{ backgroundColor: T.bg, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: loyaltyPointsToRedeem > 0 ? Colors.gold[500] : T.border }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Award size={18} color={Colors.gold[500]} />
+                <Text style={{ fontWeight: '800', fontSize: 15, color: T.text }}>Empire Points</Text>
+              </View>
+              <Text style={{ fontSize: 13, color: T.textSec }}>{loyaltyBalance.toLocaleString()} pts available</Text>
+            </View>
+            <Text style={{ fontSize: 12, color: T.textSec, marginBottom: 10 }}>100 pts = R10 off — tap to apply</Text>
+            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+              {QUICK_OPTIONS.map((pts) => {
+                const isSelected = loyaltyPointsToRedeem === pts;
+                const label = pts === Math.floor(loyaltyBalance / 100) * 100 && pts > 200 ? `All (${pts} pts)` : `${pts} pts`;
+                return (
+                  <Pressable
+                    key={pts}
+                    onPress={() => setLoyaltyPoints(isSelected ? 0 : pts)}
+                    style={{
+                      paddingVertical: 8,
+                      paddingHorizontal: 14,
+                      borderRadius: 20,
+                      borderWidth: 1.5,
+                      borderColor: isSelected ? Colors.gold[500] : T.border,
+                      backgroundColor: isSelected ? Colors.gold[500] + '18' : T.surface,
+                    }}
+                  >
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: isSelected ? Colors.gold[500] : T.textSec }}>
+                      {label} (−{formatPrice((pts / 100) * 10)})
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
         {/* Order Summary */}
         <View style={{ backgroundColor: T.bg, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: T.border }}>
           <Text style={{ fontWeight: '800', fontSize: 15, color: T.text, marginBottom: 12 }}>Summary</Text>
@@ -160,6 +212,12 @@ export default function CheckoutScreen() {
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
               <Text style={{ color: T.success }}>Discount ({coupon?.code})</Text>
               <Text style={{ color: T.success, fontWeight: '600' }}>−{formatPrice(discount)}</Text>
+            </View>
+          )}
+          {loyaltyPointsToRedeem > 0 && (
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+              <Text style={{ color: Colors.gold[500] }}>Empire Points (−{loyaltyPointsToRedeem} pts)</Text>
+              <Text style={{ color: Colors.gold[500], fontWeight: '600' }}>−{formatPrice(loyaltyDiscount)}</Text>
             </View>
           )}
           <View style={{ height: 1, backgroundColor: T.border, marginVertical: 10 }} />

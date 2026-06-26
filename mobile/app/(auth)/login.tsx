@@ -3,7 +3,7 @@ import { View, Text, Pressable, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { useMutation } from '@tanstack/react-query';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
-import { Button, Input } from '@/components/ui';
+import { Button, Input } from '@/components/empire';
 import { authService } from '@/services/auth.service';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
@@ -28,12 +28,23 @@ export default function LoginScreen() {
       await setAuth(user, tokens.accessToken, tokens.refreshToken);
       const pushToken = await registerForPushNotifications();
       if (pushToken) await notificationService.registerToken(pushToken);
-      router.replace(user.role === 'driver' ? '/(driver)' : '/(customer)');
+      if (user.role === 'driver') router.replace('/(driver)');
+      else if (user.role === 'restaurant') router.replace('/(restaurant)');
+      else if (user.role === 'admin') router.replace('/(admin)');
+      else router.replace('/(customer)' as any);
     },
     onError: (error: AppError) => {
-      if (error.field === 'email') setErrors({ email: error.message });
-      else if (error.field === 'password') setErrors({ password: error.message });
-      else showToast(error.message, 'error');
+      if (error.code === 'PENDING_APPROVAL') {
+        router.replace('/(auth)/pending-approval');
+      } else if (error.code === 'ACCOUNT_SUSPENDED') {
+        router.replace({ pathname: '/(auth)/suspended', params: { reason: error.message } });
+      } else if (error.field === 'email') {
+        setErrors({ email: error.message });
+      } else if (error.field === 'password') {
+        setErrors({ password: error.message });
+      } else {
+        showToast(error.message, 'error');
+      }
     },
   });
 
@@ -92,13 +103,13 @@ export default function LoginScreen() {
             <Text style={{ color: T.action, fontWeight: '600', fontSize: 14 }}>Forgot password?</Text>
           </Pressable>
 
-          <Button size="lg" onPress={handleLogin} loading={loginMutation.isPending}>
+          <Button variant="primary" size="lg" fullWidth onPress={handleLogin} loading={loginMutation.isPending}>
             Sign In
           </Button>
 
           <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 28 }}>
             <Text style={{ color: T.textSec, fontSize: 15 }}>Don't have an account? </Text>
-            <Pressable onPress={() => router.push('/(auth)/register')}>
+            <Pressable onPress={() => router.push('/(auth)/account-type')}>
               <Text style={{ color: T.action, fontWeight: '700', fontSize: 15 }}>Sign Up</Text>
             </Pressable>
           </View>

@@ -25,6 +25,15 @@ export interface PaymentIntent {
   amount: number;
 }
 
+export interface WalletTransaction {
+  id: string;
+  type: 'topup' | 'payment' | 'refund';
+  amount: number;
+  description?: string;
+  reference?: string;
+  createdAt: string;
+}
+
 export interface PaymentConfirmation {
   orderId: string;
   provider: PaymentProvider;

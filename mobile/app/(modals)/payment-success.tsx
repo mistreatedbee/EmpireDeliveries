@@ -51,7 +51,7 @@ export default function PaymentSuccessScreen() {
               Track My Order
             </Button>
           )}
-          <Button variant="secondary" size="lg" onPress={() => router.replace('/(customer)')}>
+          <Button variant="secondary" size="lg" onPress={() => router.replace('/(customer)' as any)}>
             Back to Home
           </Button>
         </View>

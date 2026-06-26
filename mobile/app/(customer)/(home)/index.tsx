@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ScrollView, View, Text, Pressable, RefreshControl } from 'react-native';
+import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import { MapPin, ChevronDown, Bell, Search } from 'lucide-react-native';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
@@ -19,7 +20,16 @@ import { formatPrice } from '@/utils/formatters';
 import { Restaurant } from '@/types/restaurant.types';
 
 export default function HomeScreen() {
-  const { selectedAddress } = useLocationStore();
+  const { selectedAddress, currentLocation, permissionStatus, setCurrentLocation } = useLocationStore();
+
+  // Silently re-fetch GPS coords if they were lost after app restart
+  useEffect(() => {
+    if (!currentLocation && permissionStatus === 'granted') {
+      Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
+        .then((loc) => setCurrentLocation({ latitude: loc.coords.latitude, longitude: loc.coords.longitude }))
+        .catch(() => null);
+    }
+  }, []);
   const { unreadCount } = useNotificationStore();
   const { itemCount, subtotal } = useCartStore();
   const [activeCategory, setActiveCategory] = useState('');

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TextInputProps, Pressable } from 'react-native';
+import { View, Text, TextInput, TextInputProps, Pressable, StyleSheet } from 'react-native';
 
 interface InputProps extends TextInputProps {
   label?: string;
@@ -8,6 +8,7 @@ interface InputProps extends TextInputProps {
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
   onRightIconPress?: () => void;
+  dark?: boolean;
 }
 
 export function Input({
@@ -18,9 +19,38 @@ export function Input({
   rightIcon,
   onRightIconPress,
   style,
+  dark = false,
   ...props
 }: InputProps) {
   const [focused, setFocused] = useState(false);
+
+  if (dark) {
+    const borderColor = error ? '#ef4444' : focused ? '#D4AF37' : '#333';
+    return (
+      <View style={{ marginBottom: 16 }}>
+        {label && (
+          <Text style={{ color: '#aaa', fontSize: 12, fontWeight: '700', marginBottom: 6, letterSpacing: 0.5 }}>{label}</Text>
+        )}
+        <View style={{ flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor, borderRadius: 12, backgroundColor: '#1a1a1a', paddingHorizontal: 14, paddingVertical: 12 }}>
+          {leftIcon && <View style={{ marginRight: 10 }}>{leftIcon}</View>}
+          <TextInput
+            style={[{ flex: 1, color: '#fff', fontSize: 15, fontFamily: 'Inter_400Regular' }, style as object]}
+            placeholderTextColor="#555"
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            {...props}
+          />
+          {rightIcon && (
+            <Pressable onPress={onRightIconPress} style={{ marginLeft: 10 }}>
+              {rightIcon}
+            </Pressable>
+          )}
+        </View>
+        {error && <Text style={{ color: '#ef4444', fontSize: 12, marginTop: 4, marginLeft: 2 }}>{error}</Text>}
+        {hint && !error && <Text style={{ color: '#666', fontSize: 12, marginTop: 4, marginLeft: 2 }}>{hint}</Text>}
+      </View>
+    );
+  }
 
   const borderColor = error
     ? 'border-t-danger'

@@ -36,18 +36,28 @@ export interface ForgotPasswordPayload {
 }
 
 export interface OtpPayload {
-  phone: string;
+  email: string;
   otp: string;
   purpose: 'registration' | 'password_reset';
+  // Registration-only: synced to our DB after InsForge verification
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  role?: string;
 }
 
 export interface ResendOtpPayload {
-  phone: string;
+  email: string;
 }
 
 export interface ResetPasswordPayload {
   token: string;
   newPassword: string;
+}
+
+export interface ExchangeResetCodePayload {
+  email: string;
+  code: string;
 }
 
 export interface AuthState {

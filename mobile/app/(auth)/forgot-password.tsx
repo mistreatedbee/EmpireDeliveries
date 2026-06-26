@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { useMutation } from '@tanstack/react-query';
 import { Mail } from 'lucide-react-native';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
-import { Button, Input } from '@/components/ui';
+import { Button, Input } from '@/components/empire';
 import { KeyboardWrapper } from '@/components/layout/KeyboardWrapper';
 import { authService } from '@/services/auth.service';
 import { useUIStore } from '@/stores/uiStore';
@@ -15,32 +15,15 @@ import { AppError } from '@/types/api.types';
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
-  const [sent, setSent] = useState(false);
   const { showToast } = useUIStore();
 
   const mutation = useMutation({
     mutationFn: () => authService.forgotPassword({ email: email.trim().toLowerCase() }),
-    onSuccess: () => setSent(true),
+    onSuccess: () => {
+      router.push({ pathname: '/(auth)/otp', params: { email: email.trim().toLowerCase(), purpose: 'password_reset' } } as any);
+    },
     onError: (error: AppError) => showToast(error.message, 'error'),
   });
-
-  if (sent) {
-    return (
-      <ScreenWrapper bg="white">
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }}>
-          <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: T.successBg, alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
-            <Mail size={32} color={T.success} />
-          </View>
-          <Text style={{ color: T.text, fontSize: 26, fontWeight: '900', textAlign: 'center', marginBottom: 10 }}>Check your email</Text>
-          <Text style={{ color: T.textSec, fontSize: 15, textAlign: 'center', lineHeight: 22, marginBottom: 40 }}>
-            We've sent a password reset link to{'\n'}
-            <Text style={{ color: T.text, fontWeight: '700' }}>{email}</Text>
-          </Text>
-          <Button size="lg" onPress={() => router.replace('/(auth)/login')}>Back to Login</Button>
-        </View>
-      </ScreenWrapper>
-    );
-  }
 
   return (
     <ScreenWrapper bg="white">
@@ -75,6 +58,7 @@ export default function ForgotPasswordScreen() {
             mutation.mutate();
           }}
           loading={mutation.isPending}
+          fullWidth
           style={{ marginTop: 8 }}
         >
           Send Reset Link

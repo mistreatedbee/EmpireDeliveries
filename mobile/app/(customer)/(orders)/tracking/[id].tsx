@@ -1,7 +1,6 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, Pressable, Linking, ActivityIndicator, ScrollView } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE, AnimatedRegion } from 'react-native-maps';
-import { Animated } from 'react-native';
+import { PlatformMap } from '@/components/map/PlatformMap';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Check, Car, Phone, Star } from 'lucide-react-native';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
@@ -20,24 +19,18 @@ export default function OrderTrackingScreen() {
   const { data: tracking, isLoading } = useOrderTracking(id);
   const { data: order } = useOrderDetail(id);
   const { currentLocation } = useLocationStore();
+  const [ratePrompted, setRatePrompted] = useState(false);
 
-  const driverRegion = useRef(
-    new AnimatedRegion({ latitude: -26.2041, longitude: 28.0473, latitudeDelta: 0.015, longitudeDelta: 0.015 }),
-  ).current;
-
+  // Auto-prompt for rating once order reaches delivered status
   useEffect(() => {
-    if (tracking?.driver) {
-      (driverRegion as AnimatedRegion & { timing: (cfg: object) => { start: () => void } }).timing({
-        toValue: 0,
-        latitude: tracking.driver.latitude,
-        longitude: tracking.driver.longitude,
-        latitudeDelta: 0.015,
-        longitudeDelta: 0.015,
-        duration: 500,
-        useNativeDriver: false,
-      }).start();
+    if (tracking?.status === 'delivered' && !ratePrompted) {
+      setRatePrompted(true);
+      const t = setTimeout(() => {
+        router.push({ pathname: '/(modals)/rate-order', params: { orderId: id } });
+      }, 1500);
+      return () => clearTimeout(t);
     }
-  }, [tracking?.driver, driverRegion]);
+  }, [tracking?.status, ratePrompted, id]);
 
   const currentStepIndex = tracking ? STEPS.indexOf(tracking.status) : 0;
 
@@ -54,29 +47,43 @@ export default function OrderTrackingScreen() {
       </View>
 
       {/* Map */}
-      <MapView
-        provider={PROVIDER_GOOGLE}
+      <PlatformMap
         style={{ height: '50%' }}
-        initialRegion={{
+        region={{
           latitude: currentLocation?.latitude ?? -26.2041,
           longitude: currentLocation?.longitude ?? 28.0473,
           latitudeDelta: 0.05,
           longitudeDelta: 0.05,
         }}
-      >
-        {currentLocation && (
-          <Marker coordinate={currentLocation} title="Your location">
-            <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: T.action, borderWidth: 3, borderColor: '#FFF' }} />
-          </Marker>
-        )}
-        {tracking?.driver && (
-          <Marker coordinate={{ latitude: tracking.driver.latitude, longitude: tracking.driver.longitude }} title={tracking.driver.firstName}>
-            <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: T.action, borderWidth: 2, borderColor: '#FFF', alignItems: 'center', justifyContent: 'center' }}>
-              <Car size={18} color="#FFF" />
-            </View>
-          </Marker>
-        )}
-      </MapView>
+        markers={[
+          ...(currentLocation
+            ? [
+                {
+                  id: 'self',
+                  latitude: currentLocation.latitude,
+                  longitude: currentLocation.longitude,
+                  children: (
+                    <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: T.action, borderWidth: 3, borderColor: '#FFF' }} />
+                  ),
+                },
+              ]
+            : []),
+          ...(tracking?.driver
+            ? [
+                {
+                  id: 'driver',
+                  latitude: tracking.driver.latitude,
+                  longitude: tracking.driver.longitude,
+                  children: (
+                    <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: T.action, borderWidth: 2, borderColor: '#FFF', alignItems: 'center', justifyContent: 'center' }}>
+                      <Car size={18} color="#FFF" />
+                    </View>
+                  ),
+                },
+              ]
+            : []),
+        ]}
+      />
 
       {/* Status panel */}
       <ScrollView style={{ backgroundColor: T.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20 }} contentContainerStyle={{ padding: 20, paddingBottom: 32 }}>
@@ -98,7 +105,7 @@ export default function OrderTrackingScreen() {
               </View>
               <Badge
                 label={formatOrderStatus(tracking?.status ?? 'placed')}
-                variant={tracking?.status === 'delivered' ? 'success' : 'default'}
+                variant={tracking?.status === 'delivered' ? 'success' : 'outline'}
               />
             </View>
 
