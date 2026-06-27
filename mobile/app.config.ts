@@ -9,6 +9,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   icon: './assets/icon.png',
   userInterfaceStyle: 'automatic',
   scheme: 'empire',
+  newArchEnabled: false,
   splash: {
     image: './assets/splash.png',
     resizeMode: 'contain',
