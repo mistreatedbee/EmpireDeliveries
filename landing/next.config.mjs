@@ -5,6 +5,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: "export",
   turbopack: {
     root: __dirname,
   },
