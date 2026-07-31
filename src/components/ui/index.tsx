@@ -1,13 +1,13 @@
 import React from 'react';
-import { Crown, Star, Clock, MapPin, TrendingUp, ChevronRight, Bike, Package, ShoppingBag, Pill } from 'lucide-react';
+import { Star, Clock, MapPin, TrendingUp, ChevronRight, Bike, Package, ShoppingBag, Pill } from 'lucide-react';
 
-// ─── Crown Logo ────────────────────────────────────────────────────────────────
+// ─── Logo (light-bg contexts) ──────────────────────────────────────────────────
 export const EmpireLogo: React.FC<{ size?: number; animated?: boolean }> = ({ size = 40, animated = false }) => (
   <div className={`flex items-center gap-2.5 ${animated ? 'animate-fade-in' : ''}`}>
-    <div className="relative">
+    <div className="relative" style={{ width: size, height: size }}>
       <div className="absolute inset-0 bg-gold-500/20 rounded-xl blur-md animate-pulse-gold" />
-      <div className="relative bg-empire-black rounded-xl p-2" style={{ width: size, height: size }}>
-        <Crown className="text-gold-500 w-full h-full" strokeWidth={1.5} />
+      <div className="relative rounded-xl overflow-hidden" style={{ width: size, height: size }}>
+        <img src="/brand/logo-white-bg.jpg" alt="Empire Deliveries" className="w-full h-full object-cover" />
       </div>
     </div>
     <div>
@@ -21,10 +21,11 @@ export const EmpireLogo: React.FC<{ size?: number; animated?: boolean }> = ({ si
   </div>
 );
 
+// ─── Logo (dark-bg contexts) ───────────────────────────────────────────────────
 export const EmpireLogoWhite: React.FC<{ size?: number }> = ({ size = 40 }) => (
   <div className="flex items-center gap-2.5">
-    <div className="relative bg-gold-500 rounded-xl p-2" style={{ width: size, height: size }}>
-      <Crown className="text-empire-black w-full h-full" strokeWidth={1.5} />
+    <div className="rounded-xl overflow-hidden" style={{ width: size, height: size }}>
+      <img src="/brand/logo-black-bg.jpg" alt="Empire Deliveries" className="w-full h-full object-cover" />
     </div>
     <div>
       <div className="font-black text-white tracking-tight leading-none" style={{ fontSize: size * 0.45 }}>EMPIRE</div>

@@ -71,7 +71,7 @@ export function CommunityImpact() {
               />
               {/* Logo overlay on the image */}
               <div className="absolute left-4 top-4 rounded-2xl border border-white/15 bg-black/50 px-4 py-2.5 backdrop-blur-sm">
-                <Logo className="text-white [&>span:last-child>span:first-child]:text-white" />
+                <Logo onDark />
               </div>
             </div>
           </Reveal>

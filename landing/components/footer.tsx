@@ -35,7 +35,7 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-4 py-16">
         <div className="grid gap-12 lg:grid-cols-[1.4fr_2fr]">
           <div className="max-w-sm">
-            <Logo className="text-white" />
+            <Logo className="text-white" onDark />
             <p className="mt-5 text-pretty leading-relaxed text-white/60">
               Empire Deliveries is building Africa&apos;s most trusted on-demand delivery network — connecting
               customers, businesses, drivers, and communities through world-class technology.

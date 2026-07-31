@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, Users, Bike, UtensilsCrossed, ShoppingBag, BarChart2, Tag, Bell, Settings, Map, Search, ChevronRight, TrendingUp, AlertCircle, CheckCircle, Clock, DollarSign, Package, Star, Globe, Shield, MessageSquare, Zap, Crown } from 'lucide-react';
+import { LayoutDashboard, Users, Bike, UtensilsCrossed, ShoppingBag, BarChart2, Tag, Bell, Settings, Map, Search, ChevronRight, TrendingUp, AlertCircle, CheckCircle, Clock, DollarSign, Package, Star, Globe, Shield, MessageSquare, Zap } from 'lucide-react';
 import { RESTAURANTS, MOCK_ORDERS, formatPrice } from '../../data/mockData';
 import { Badge, StatCard, EmpireLogo, OrderStatusBadge } from '../ui';
 
@@ -41,8 +41,8 @@ export const AdminPanel: React.FC<{ onLogout: () => void }> = ({ onLogout }) => 
       {/* Header */}
       <header className="bg-empire-black h-16 flex items-center px-6 gap-4 z-20 sticky top-0 border-b border-white/5">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-gold-500 rounded-xl flex items-center justify-center">
-            <Crown className="w-5 h-5 text-empire-black" strokeWidth={1.5} />
+          <div className="w-8 h-8 rounded-xl overflow-hidden">
+            <img src="/brand/logo-black-bg.jpg" alt="Empire Deliveries" className="w-full h-full object-cover" />
           </div>
           <div>
             <p className="text-white font-black text-sm leading-none">EMPIRE</p>

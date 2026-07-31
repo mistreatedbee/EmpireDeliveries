@@ -39,20 +39,22 @@ export const metadata: Metadata = {
     description:
       "One intelligent delivery ecosystem connecting customers, businesses, drivers, and communities.",
     siteName: "Empire Deliveries",
+    images: [{ url: "/brand/logo-black-bg.jpg", width: 696, height: 696, alt: "Empire Deliveries" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Empire Deliveries — Everything You Need. Delivered.",
     description:
       "One intelligent delivery ecosystem connecting customers, businesses, drivers, and communities.",
+    images: ["/brand/logo-black-bg.jpg"],
   },
   generator: "v0.app",
   icons: {
     icon: [
-      { url: "/icon-light-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/brand/logo-black-bg.jpg", sizes: "696x696", type: "image/jpeg" },
       { url: "/icon.svg", type: "image/svg+xml" },
     ],
-    apple: "/apple-icon.png",
+    apple: "/brand/logo-black-bg.jpg",
   },
 }
 

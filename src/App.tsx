@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Crown, Smartphone, Bike, UtensilsCrossed, Shield, ChevronRight, Star, Users, Package, Zap, MapPin, Globe, ArrowRight, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Smartphone, Bike, UtensilsCrossed, Shield, ChevronRight, Star, Users, Package, Zap, MapPin, Globe, ArrowRight, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { SplashScreen, OnboardingScreen, AuthScreen, LocationScreen } from './components/customer/Onboarding';
 import { CustomerApp } from './components/customer/CustomerApp';
 import { DriverApp } from './components/driver/DriverApp';
@@ -29,8 +29,8 @@ const LandingPage: React.FC<{ onSelect: (view: AppView) => void }> = ({ onSelect
           <div className="flex items-center gap-3">
             <div className="relative">
               <div className="absolute inset-0 bg-gold-500/20 rounded-2xl blur-md" />
-              <div className="relative w-10 h-10 bg-gold-500 rounded-2xl flex items-center justify-center shadow-gold">
-                <Crown className="w-6 h-6 text-empire-black" strokeWidth={1.5} />
+              <div className="relative w-10 h-10 rounded-2xl overflow-hidden shadow-gold">
+                <img src="/brand/logo-black-bg.jpg" alt="Empire Deliveries" className="w-full h-full object-cover" />
               </div>
             </div>
             <div>
@@ -192,8 +192,8 @@ const LandingPage: React.FC<{ onSelect: (view: AppView) => void }> = ({ onSelect
       {/* Footer */}
       <div className="relative z-10 border-t border-white/5 py-8 px-6 lg:px-12 text-center">
         <div className="flex items-center justify-center gap-3 mb-4">
-          <div className="w-7 h-7 bg-gold-500 rounded-xl flex items-center justify-center">
-            <Crown className="w-4 h-4 text-empire-black" strokeWidth={1.5} />
+          <div className="w-7 h-7 rounded-xl overflow-hidden">
+            <img src="/brand/logo-black-bg.jpg" alt="Empire Deliveries" className="w-full h-full object-cover" />
           </div>
           <span className="text-white/60 text-sm">Empire Deliveries — Fast. Reliable. Royal.</span>
         </div>
@@ -234,8 +234,8 @@ const DesktopShell: React.FC<{ children: React.ReactNode; onBack: () => void }> 
 
 const EmpireLogoSmall: React.FC = () => (
   <div className="flex items-center gap-2">
-    <div className="w-6 h-6 bg-gold-500 rounded-lg flex items-center justify-center">
-      <Crown className="w-4 h-4 text-empire-black" strokeWidth={1.5} />
+    <div className="w-6 h-6 rounded-lg overflow-hidden">
+      <img src="/brand/logo-black-bg.jpg" alt="" className="w-full h-full object-cover" />
     </div>
     <span className="text-white font-bold text-sm">Empire Deliveries</span>
   </div>
@@ -282,8 +282,8 @@ const AdminLoginScreen: React.FC<{ onSuccess: () => void; onBack: () => void }> 
         <div className="bg-white/3 border border-white/10 rounded-3xl p-8">
           {/* Logo */}
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 bg-gold-500 rounded-2xl flex items-center justify-center">
-              <Crown className="w-6 h-6 text-empire-black" strokeWidth={1.5} />
+            <div className="w-10 h-10 rounded-2xl overflow-hidden">
+              <img src="/brand/logo-black-bg.jpg" alt="Empire Deliveries" className="w-full h-full object-cover" />
             </div>
             <div>
               <p className="font-black text-white text-base leading-none">EMPIRE</p>
