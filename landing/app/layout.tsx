@@ -9,7 +9,7 @@ const inter = Inter({
   display: "swap",
 })
 
-const siteUrl = "https://empiredeliveries.vercel.app"
+const siteUrl = "https://empire-deliveries-psi.vercel.app"
 const ogImageUrl = `${siteUrl}/og-preview.png`
 
 export const metadata: Metadata = {
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     },
   },
   alternates: {
-    canonical: "/",
+    canonical: siteUrl,
   },
   manifest: "/manifest.webmanifest",
   openGraph: {

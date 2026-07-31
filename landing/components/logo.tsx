@@ -5,17 +5,17 @@ export function Logo({ className, onDark = false }: { className?: string; onDark
   return (
     <span className={cn("flex items-center gap-2.5", className)}>
       <span aria-hidden="true" className="relative flex size-9 shrink-0 overflow-hidden rounded-xl shadow-sm">
-        {/* White-bg logo: shown on light backgrounds (light mode default) */}
+        {/* Black-bg logo: dark badge, reads clearly on light backgrounds */}
         <Image
-          src="/brand/logo-white-bg.jpg"
+          src="/brand/logo-black-bg.jpg"
           alt=""
           fill
           sizes="36px"
           className={cn("object-cover", onDark ? "hidden" : "block dark:hidden")}
         />
-        {/* Black-bg logo: shown on dark backgrounds (dark mode or onDark prop) */}
+        {/* White-bg logo: light badge, reads clearly on dark backgrounds */}
         <Image
-          src="/brand/logo-black-bg.jpg"
+          src="/brand/logo-white-bg.jpg"
           alt=""
           fill
           sizes="36px"

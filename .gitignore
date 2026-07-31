@@ -43,3 +43,5 @@ backend/
 
 # Expo local dev cache
 .expo/
+.vercel
+.env*
