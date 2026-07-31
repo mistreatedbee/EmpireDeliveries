@@ -1,0 +1,22 @@
+{
+  "name": "Empire Deliveries",
+  "short_name": "Empire Deliveries",
+  "description": "Empire Deliveries connects customers, businesses, and drivers through one intelligent platform for fast, reliable delivery across Africa.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A0A0A",
+  "theme_color": "#0A0A0A",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

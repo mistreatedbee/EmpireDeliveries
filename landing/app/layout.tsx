@@ -9,7 +9,8 @@ const inter = Inter({
   display: "swap",
 })
 
-const siteUrl = "https://empiredeliveries.example"
+const siteUrl = "https://empiredeliveries.vercel.app"
+const ogImageUrl = `${siteUrl}/og-preview.png`
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -18,7 +19,9 @@ export const metadata: Metadata = {
     template: "%s | Empire Deliveries",
   },
   description:
-    "Empire Deliveries connects customers, businesses, and drivers through one intelligent platform for food delivery, groceries, pharmacy, retail and courier logistics across Africa.",
+    "Empire Deliveries connects customers, businesses, and drivers through one intelligent platform for food delivery, groceries, pharmacy, retail, and courier logistics across Africa.",
+  applicationName: "Empire Deliveries",
+  generator: "v0.app",
   keywords: [
     "Empire Deliveries",
     "delivery app",
@@ -31,30 +34,54 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "Empire Deliveries" }],
   creator: "Empire Deliveries",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  alternates: {
+    canonical: "/",
+  },
+  manifest: "/manifest.webmanifest",
   openGraph: {
     type: "website",
     locale: "en_US",
     url: siteUrl,
     title: "Empire Deliveries — Everything You Need. Delivered.",
     description:
-      "One intelligent delivery ecosystem connecting customers, businesses, drivers, and communities.",
+      "One intelligent delivery ecosystem connecting customers, businesses, drivers, and communities across Africa.",
     siteName: "Empire Deliveries",
-    images: [{ url: "/brand/logo-black-bg.jpg", width: 696, height: 696, alt: "Empire Deliveries" }],
+    images: [
+      {
+        url: ogImageUrl,
+        width: 1200,
+        height: 630,
+        type: "image/png",
+        alt: "Empire Deliveries social preview",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Empire Deliveries — Everything You Need. Delivered.",
     description:
-      "One intelligent delivery ecosystem connecting customers, businesses, drivers, and communities.",
-    images: ["/brand/logo-black-bg.jpg"],
+      "One intelligent delivery ecosystem connecting customers, businesses, drivers, and communities across Africa.",
+    site: "@empiredeliveries",
+    creator: "@empiredeliveries",
+    images: [ogImageUrl],
   },
-  generator: "v0.app",
   icons: {
     icon: [
-      { url: "/brand/logo-black-bg.jpg", sizes: "696x696", type: "image/jpeg" },
       { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/apple-icon.png", type: "image/png" },
     ],
-    apple: "/brand/logo-black-bg.jpg",
+    shortcut: "/icon.svg",
+    apple: "/apple-icon.png",
   },
 }
 
