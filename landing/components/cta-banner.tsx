@@ -1,6 +1,7 @@
 "use client"
 
 import { Reveal } from "@/components/reveal"
+import { Logo } from "@/components/logo"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Smartphone } from "lucide-react"
 
@@ -15,6 +16,9 @@ export function CtaBanner() {
               <div className="absolute -bottom-24 -right-24 size-72 rounded-full bg-brand-emerald/40 blur-3xl" />
             </div>
             <div className="relative mx-auto max-w-2xl">
+              <div className="mb-6 flex justify-center">
+                <Logo className="text-white [&>span:last-child>span:first-child]:text-white [&>span:last-child>span:last-child]:text-primary" />
+              </div>
               <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-sm font-medium text-white/80">
                 <Smartphone className="size-4 text-brand-emerald" />
                 Available across major African cities

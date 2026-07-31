@@ -189,10 +189,15 @@ export function MobileApps() {
             <div className="relative h-[560px] w-[280px] rounded-[2.75rem] border-[10px] border-brand-dark bg-brand-dark shadow-2xl">
               <div className="absolute left-1/2 top-0 z-10 h-6 w-32 -translate-x-1/2 rounded-b-2xl bg-brand-dark" />
               <div className="h-full w-full overflow-hidden rounded-[2rem] bg-card">
-                <div className="flex items-center justify-between px-5 pt-3 text-[10px] font-medium text-foreground">
+                <div className="flex items-center justify-between px-4 pt-3 text-[10px] font-medium text-foreground">
                   <span>9:41</span>
-                  <span className="flex items-center gap-1">
-                    <span className="size-2 rounded-full bg-accent" /> Empire
+                  <span className="flex items-center gap-1 font-black tracking-tight">
+                    <span className="flex size-4 items-center justify-center rounded bg-primary">
+                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-primary-foreground">
+                        <path d="M2 4l3 12h14l3-12" /><path d="M12 4v4" /><path d="M8 4l1 4" /><path d="M16 4l-1 4" />
+                      </svg>
+                    </span>
+                    EMPIRE
                   </span>
                 </div>
                 <div className="h-[calc(100%-1.5rem)]">

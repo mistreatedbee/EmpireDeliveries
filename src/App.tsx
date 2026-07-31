@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Crown, Smartphone, Bike, UtensilsCrossed, Shield, ChevronRight, Star, Users, Package, Zap, MapPin, Globe, ArrowRight } from 'lucide-react';
+import { Crown, Smartphone, Bike, UtensilsCrossed, Shield, ChevronRight, Star, Users, Package, Zap, MapPin, Globe, ArrowRight, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { SplashScreen, OnboardingScreen, AuthScreen, LocationScreen } from './components/customer/Onboarding';
 import { CustomerApp } from './components/customer/CustomerApp';
 import { DriverApp } from './components/driver/DriverApp';
 import { RestaurantPortal } from './components/restaurant/RestaurantPortal';
 import { AdminPanel } from './components/admin/AdminPanel';
 
-type AppView = 'landing' | 'customer-splash' | 'customer-onboarding' | 'customer-auth' | 'customer-location' | 'customer-app' | 'driver' | 'restaurant' | 'admin';
+type AppView = 'landing' | 'customer-splash' | 'customer-onboarding' | 'customer-auth' | 'customer-location' | 'customer-app' | 'driver' | 'restaurant' | 'admin-login' | 'admin';
 
 // ─── Platform Landing Page ────────────────────────────────────────────────────
 const LandingPage: React.FC<{ onSelect: (view: AppView) => void }> = ({ onSelect }) => {
@@ -113,7 +113,7 @@ const LandingPage: React.FC<{ onSelect: (view: AppView) => void }> = ({ onSelect
               { id: 'customer-splash', label: 'Customer App', sub: 'Mobile-first delivery experience', icon: <Smartphone className="w-7 h-7" />, desc: 'Order food, track deliveries live, earn Royalty Points, and manage your profile.', badge: 'Mobile App', color: '#D4AF37', features: ['Home & Search', 'Restaurant Menus', 'Live Tracking', 'Loyalty Program'] },
               { id: 'driver', label: 'Driver App', sub: 'Earn on your schedule', icon: <Bike className="w-7 h-7" />, desc: 'Accept deliveries, navigate routes, and track your daily earnings effortlessly.', badge: 'Mobile App', color: '#00C853', features: ['Delivery Requests', 'Live Navigation', 'Earnings Dashboard', 'Wallet & Payouts'] },
               { id: 'restaurant', label: 'Partner Portal', sub: 'Restaurant management', icon: <UtensilsCrossed className="w-7 h-7" />, desc: 'Manage orders, update menus, view analytics and grow your restaurant business.', badge: 'Web Dashboard', color: '#FF9800', features: ['Order Management', 'Menu Builder', 'Analytics', 'Reviews'] },
-              { id: 'admin', label: 'Admin Console', sub: 'Enterprise control panel', icon: <Shield className="w-7 h-7" />, desc: 'Full platform oversight — users, drivers, restaurants, revenue, and real-time monitoring.', badge: 'Enterprise', color: '#4299E1', features: ['Platform Analytics', 'User Management', 'Commission Control', 'System Settings'] },
+              { id: 'admin-login', label: 'Admin Console', sub: 'Enterprise control panel', icon: <Shield className="w-7 h-7" />, desc: 'Full platform oversight — users, drivers, restaurants, revenue, and real-time monitoring.', badge: 'Enterprise', color: '#4299E1', features: ['Platform Analytics', 'User Management', 'Commission Control', 'System Settings'] },
             ].map(app => (
               <button
                 key={app.id}
@@ -241,6 +241,123 @@ const EmpireLogoSmall: React.FC = () => (
   </div>
 );
 
+// ─── Admin Login Screen ────────────────────────────────────────────────────────
+const ADMIN_CREDENTIALS = { email: 'admin@empire.co.za', password: 'Admin@2024' };
+
+const AdminLoginScreen: React.FC<{ onSuccess: () => void; onBack: () => void }> = ({ onSuccess, onBack }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    setTimeout(() => {
+      if (email === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password) {
+        onSuccess();
+      } else {
+        setError('Invalid email or password.');
+        setLoading(false);
+      }
+    }, 800);
+  };
+
+  return (
+    <div className="min-h-screen bg-empire-black flex flex-col items-center justify-center px-4">
+      {/* Background glow */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-500/5 rounded-full blur-3xl" />
+      </div>
+
+      <div className="relative w-full max-w-md">
+        {/* Back link */}
+        <button onClick={onBack} className="flex items-center gap-2 text-white/40 hover:text-white/70 text-sm font-medium mb-8 transition-colors">
+          ← Back to Platform
+        </button>
+
+        {/* Card */}
+        <div className="bg-white/3 border border-white/10 rounded-3xl p-8">
+          {/* Logo */}
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-10 h-10 bg-gold-500 rounded-2xl flex items-center justify-center">
+              <Crown className="w-6 h-6 text-empire-black" strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="font-black text-white text-base leading-none">EMPIRE</p>
+              <p className="text-gold-500 text-xs font-semibold tracking-[0.3em]">Admin Console</p>
+            </div>
+          </div>
+
+          <h1 className="text-2xl font-black text-white mb-1">Welcome back</h1>
+          <p className="text-white/40 text-sm mb-8">Sign in to access the admin console.</p>
+
+          <form onSubmit={handleLogin} className="space-y-4">
+            {/* Email */}
+            <div>
+              <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">Email address</label>
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="admin@empire.co.za"
+                required
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-white/20 focus:outline-none focus:border-blue-400/50 focus:bg-white/8 transition-all"
+              />
+            </div>
+
+            {/* Password */}
+            <div>
+              <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">Password</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  required
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-11 text-white text-sm placeholder-white/20 focus:outline-none focus:border-blue-400/50 focus:bg-white/8 transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(v => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Error */}
+            {error && (
+              <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+                <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                <p className="text-red-400 text-sm">{error}</p>
+              </div>
+            )}
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-blue-500 hover:bg-blue-400 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-sm py-3.5 rounded-xl transition-colors mt-2"
+            >
+              {loading ? 'Signing in…' : 'Sign in to Admin Console'}
+            </button>
+          </form>
+
+          {/* Hint */}
+          <p className="text-white/20 text-xs text-center mt-6">
+            Demo credentials: admin@empire.co.za / Admin@2024
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ─── Root App ──────────────────────────────────────────────────────────────────
 export default function App() {
   const [view, setView] = useState<AppView>('landing');
@@ -283,6 +400,9 @@ export default function App() {
     <DesktopShell onBack={goLanding}>
       <RestaurantPortal onLogout={goLanding} />
     </DesktopShell>
+  );
+  if (view === 'admin-login') return (
+    <AdminLoginScreen onSuccess={() => setView('admin')} onBack={goLanding} />
   );
   if (view === 'admin') return (
     <DesktopShell onBack={goLanding}>

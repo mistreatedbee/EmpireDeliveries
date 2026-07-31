@@ -2,6 +2,7 @@
 
 import Image from "next/image"
 import { Reveal } from "@/components/reveal"
+import { Logo } from "@/components/logo"
 import { CountUp } from "@/components/count-up"
 
 const counters = [
@@ -60,7 +61,7 @@ export function CommunityImpact() {
           </div>
 
           <Reveal direction="left">
-            <div className="overflow-hidden rounded-3xl border border-white/10">
+            <div className="relative overflow-hidden rounded-3xl border border-white/10">
               <Image
                 src="/images/customer.png"
                 alt="A customer happily receiving an Empire Deliveries order at home"
@@ -68,6 +69,10 @@ export function CommunityImpact() {
                 height={560}
                 className="h-full w-full object-cover"
               />
+              {/* Logo overlay on the image */}
+              <div className="absolute left-4 top-4 rounded-2xl border border-white/15 bg-black/50 px-4 py-2.5 backdrop-blur-sm">
+                <Logo className="text-white [&>span:last-child>span:first-child]:text-white" />
+              </div>
             </div>
           </Reveal>
         </div>

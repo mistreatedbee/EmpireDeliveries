@@ -2,6 +2,7 @@
 
 import Image from "next/image"
 import { Target, Eye, HeartHandshake, CheckCircle2 } from "lucide-react"
+import { Logo } from "@/components/logo"
 import { Reveal, Stagger, StaggerItem } from "@/components/reveal"
 
 const pillars = [
@@ -48,6 +49,10 @@ export function About() {
                 height={720}
                 className="h-full w-full object-cover"
               />
+            </div>
+            {/* Logo badge top-left of image */}
+            <div className="absolute left-4 top-4 rounded-2xl border border-border/60 bg-card/90 px-4 py-2.5 shadow-lg backdrop-blur-sm">
+              <Logo />
             </div>
             <div className="absolute -bottom-6 -right-4 max-w-[220px] rounded-2xl border border-border bg-card p-4 shadow-xl">
               <p className="font-display text-2xl font-bold text-foreground">1 platform</p>

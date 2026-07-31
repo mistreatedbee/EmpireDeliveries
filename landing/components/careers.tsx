@@ -2,6 +2,7 @@
 
 import Image from "next/image"
 import { Lightbulb, TrendingUp, GraduationCap, Users, ArrowRight } from "lucide-react"
+import { Logo } from "@/components/logo"
 import { Reveal } from "@/components/reveal"
 
 const culture = [
@@ -25,7 +26,7 @@ export function Careers() {
         <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
           <Reveal direction="right">
             <div className="relative">
-              <div className="overflow-hidden rounded-3xl border border-border">
+              <div className="relative overflow-hidden rounded-3xl border border-border">
                 <Image
                   src="/images/driver.png"
                   alt="An Empire Deliveries team member ready to make an impact"
@@ -33,6 +34,9 @@ export function Careers() {
                   height={640}
                   className="h-full w-full object-cover"
                 />
+                <div className="absolute left-4 top-4 rounded-2xl border border-border/60 bg-card/90 px-4 py-2.5 shadow-lg backdrop-blur-sm">
+                  <Logo />
+                </div>
               </div>
             </div>
           </Reveal>
