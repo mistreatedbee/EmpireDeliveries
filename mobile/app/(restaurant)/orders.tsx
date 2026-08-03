@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { router } from 'expo-router';
+import { MessageCircle, Car } from 'lucide-react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { restaurantManagementService, RestaurantOrder } from '@/services/restaurant-management.service';
+import { useOrderConversation } from '@/hooks/useChat';
 import { Colors } from '@/constants/colors';
 
 type Filter = 'all' | 'placed' | 'preparing' | 'ready' | 'history';
@@ -75,64 +78,96 @@ export default function RestaurantOrders() {
 
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
         {isLoading && <ActivityIndicator color={Colors.gold[500]} style={{ marginTop: 20 }} />}
-        {!isLoading && (orders ?? []).map((order) => {
-          const action = getAction(order);
-          return (
-            <View key={order.id} style={{ backgroundColor: '#fff', borderRadius: 18, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: Colors.surface[200] }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
-                <View>
-                  <Text style={{ fontWeight: '800', color: Colors.empire.black, fontSize: 15 }}>{order.customerName}</Text>
-                  <Text style={{ color: '#aaa', fontSize: 12, marginTop: 2 }}>{order.customerPhone}</Text>
-                </View>
-                <View style={{ backgroundColor: statusBg(order.status), paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20 }}>
-                  <Text style={{ color: statusFg(order.status), fontWeight: '700', fontSize: 12 }}>{statusLabel(order.status)}</Text>
-                </View>
-              </View>
-
-              {/* Items */}
-              <View style={{ backgroundColor: Colors.surface[100], borderRadius: 12, padding: 12, marginBottom: 10 }}>
-                {order.items.map((item, i) => (
-                  <Text key={i} style={{ color: '#555', fontSize: 13, marginBottom: 2 }}>
-                    {item.quantity}× {item.name}
-                  </Text>
-                ))}
-                {order.deliveryNotes && (
-                  <Text style={{ color: Colors.empire.warning, fontSize: 12, marginTop: 6, fontWeight: '600' }}>
-                    Note: {order.deliveryNotes}
-                  </Text>
-                )}
-              </View>
-
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Text style={{ fontWeight: '900', color: Colors.empire.black, fontSize: 17 }}>R{order.total.toFixed(0)}</Text>
-                {action && (
-                  <Pressable
-                    onPress={action.onPress}
-                    disabled={action.loading}
-                    style={{ backgroundColor: Colors.gold[500], paddingVertical: 10, paddingHorizontal: 18, borderRadius: 14 }}
-                  >
-                    {action.loading
-                      ? <ActivityIndicator color={Colors.empire.black} size="small" />
-                      : <Text style={{ color: Colors.empire.black, fontWeight: '800', fontSize: 13 }}>{action.label}</Text>}
-                  </Pressable>
-                )}
-                {order.status === 'ready' && (
-                  <Text style={{ color: Colors.empire.success, fontWeight: '700', fontSize: 13 }}>Awaiting driver</Text>
-                )}
-                {order.status === 'delivered' && (
-                  <Text style={{ color: Colors.empire.success, fontWeight: '700', fontSize: 13 }}>Delivered</Text>
-                )}
-                {order.status === 'cancelled' && (
-                  <Text style={{ color: Colors.empire.error, fontWeight: '700', fontSize: 13 }}>Cancelled</Text>
-                )}
-              </View>
-            </View>
-          );
-        })}
+        {!isLoading && (orders ?? []).map((order) => (
+          <RestaurantOrderCard key={order.id} order={order} action={getAction(order)} />
+        ))}
         {!isLoading && (orders ?? []).length === 0 && (
           <Text style={{ color: '#bbb', textAlign: 'center', fontSize: 14, paddingVertical: 40 }}>No orders found</Text>
         )}
       </ScrollView>
+    </View>
+  );
+}
+
+function RestaurantOrderCard({
+  order,
+  action,
+}: {
+  order: RestaurantOrder;
+  action: { label: string; onPress: () => void; loading: boolean } | null;
+}) {
+  const { data: customerConversation } = useOrderConversation(order.id, 'customer_restaurant');
+  const { data: driverConversation } = useOrderConversation(order.id, 'driver_restaurant');
+
+  return (
+    <View style={{ backgroundColor: '#fff', borderRadius: 18, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: Colors.surface[200] }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
+        <View>
+          <Text style={{ fontWeight: '800', color: Colors.empire.black, fontSize: 15 }}>{order.customerName}</Text>
+          <Text style={{ color: '#aaa', fontSize: 12, marginTop: 2 }}>{order.customerPhone}</Text>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Pressable
+            onPress={() => {
+              if (!customerConversation) return;
+              router.push({ pathname: '/(modals)/chat/[conversationId]', params: { conversationId: customerConversation.id, title: order.customerName } });
+            }}
+            disabled={!customerConversation}
+            style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: Colors.surface[100], alignItems: 'center', justifyContent: 'center', opacity: customerConversation ? 1 : 0.4 }}
+          >
+            <MessageCircle size={15} color={Colors.empire.black} />
+          </Pressable>
+          {driverConversation && (
+            <Pressable
+              onPress={() => router.push({ pathname: '/(modals)/chat/[conversationId]', params: { conversationId: driverConversation.id, title: 'Driver' } })}
+              style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: Colors.surface[100], alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Car size={15} color={Colors.empire.black} />
+            </Pressable>
+          )}
+          <View style={{ backgroundColor: statusBg(order.status), paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20 }}>
+            <Text style={{ color: statusFg(order.status), fontWeight: '700', fontSize: 12 }}>{statusLabel(order.status)}</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Items */}
+      <View style={{ backgroundColor: Colors.surface[100], borderRadius: 12, padding: 12, marginBottom: 10 }}>
+        {order.items.map((item, i) => (
+          <Text key={i} style={{ color: '#555', fontSize: 13, marginBottom: 2 }}>
+            {item.quantity}× {item.name}
+          </Text>
+        ))}
+        {order.deliveryNotes && (
+          <Text style={{ color: Colors.empire.warning, fontSize: 12, marginTop: 6, fontWeight: '600' }}>
+            Note: {order.deliveryNotes}
+          </Text>
+        )}
+      </View>
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Text style={{ fontWeight: '900', color: Colors.empire.black, fontSize: 17 }}>R{order.total.toFixed(0)}</Text>
+        {action && (
+          <Pressable
+            onPress={action.onPress}
+            disabled={action.loading}
+            style={{ backgroundColor: Colors.gold[500], paddingVertical: 10, paddingHorizontal: 18, borderRadius: 14 }}
+          >
+            {action.loading
+              ? <ActivityIndicator color={Colors.empire.black} size="small" />
+              : <Text style={{ color: Colors.empire.black, fontWeight: '800', fontSize: 13 }}>{action.label}</Text>}
+          </Pressable>
+        )}
+        {order.status === 'ready' && (
+          <Text style={{ color: Colors.empire.success, fontWeight: '700', fontSize: 13 }}>Awaiting driver</Text>
+        )}
+        {order.status === 'delivered' && (
+          <Text style={{ color: Colors.empire.success, fontWeight: '700', fontSize: 13 }}>Delivered</Text>
+        )}
+        {order.status === 'cancelled' && (
+          <Text style={{ color: Colors.empire.error, fontWeight: '700', fontSize: 13 }}>Cancelled</Text>
+        )}
+      </View>
     </View>
   );
 }

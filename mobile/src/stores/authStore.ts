@@ -5,6 +5,7 @@ import Constants from 'expo-constants';
 import { User } from '@/types/auth.types';
 import { storageService } from '@/services/storage.service';
 import { notificationService } from '@/services/notification.service';
+import { setInsforgeSessionToken } from '@/lib/insforgeClient';
 
 const USER_KEY = 'empire_user';
 
@@ -57,6 +58,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     if (refreshToken) await storageService.setRefreshToken(refreshToken);
     await AsyncStorage.setItem(USER_KEY, JSON.stringify(user));
     set({ user, token, refreshToken: refreshToken ?? null, isAuthenticated: true });
+    setInsforgeSessionToken(token);
     void registerPushToken();
   },
 
@@ -65,6 +67,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     await storageService.clearTokens();
     await AsyncStorage.removeItem(USER_KEY);
     set({ user: null, token: null, refreshToken: null, isAuthenticated: false });
+    setInsforgeSessionToken(null);
   },
 
   logout: async () => {
@@ -72,6 +75,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     await storageService.clearTokens();
     await AsyncStorage.removeItem(USER_KEY);
     set({ user: null, token: null, refreshToken: null, isAuthenticated: false });
+    setInsforgeSessionToken(null);
   },
 
   updateUser: (partial) => {
@@ -93,6 +97,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     if (token) {
       const user = raw ? (JSON.parse(raw) as User) : null;
       set({ token, user, isAuthenticated: true, isLoading: false });
+      setInsforgeSessionToken(token);
       void registerPushToken();
     } else {
       set({ isLoading: false });

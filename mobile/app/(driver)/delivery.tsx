@@ -10,6 +10,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { driverService } from '@/services/driver.service';
 import { useLocationStore } from '@/stores/locationStore';
 import { Colors } from '@/constants/colors';
+import { useOrderConversation } from '@/hooks/useChat';
 
 type Step = 'pickup' | 'deliver' | 'complete';
 
@@ -40,6 +41,9 @@ export default function ActiveDelivery() {
     queryFn: driverService.getActiveDelivery,
     enabled: step !== 'complete',
   });
+
+  const activeOrderId = orderId ?? delivery?.orderId;
+  const { data: customerConversation } = useOrderConversation(activeOrderId, 'customer_driver');
 
   const pickupMutation = useMutation({
     mutationFn: () => driverService.pickupDelivery(orderId ?? delivery?.orderId ?? ''),
@@ -243,8 +247,15 @@ export default function ActiveDelivery() {
                     <Phone size={18} color={Colors.empire.black} />
                   </Pressable>
                   <Pressable
-                    onPress={() => { if (delivery?.customerPhone) void Linking.openURL(`sms:${delivery.customerPhone}`); }}
-                    style={{ width: 40, height: 40, backgroundColor: Colors.empire.black, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}
+                    onPress={() => {
+                      if (!customerConversation) return;
+                      router.push({
+                        pathname: '/(modals)/chat/[conversationId]',
+                        params: { conversationId: customerConversation.id, title: delivery?.customerName ?? 'Customer' },
+                      });
+                    }}
+                    disabled={!customerConversation}
+                    style={{ width: 40, height: 40, backgroundColor: Colors.empire.black, borderRadius: 12, alignItems: 'center', justifyContent: 'center', opacity: customerConversation ? 1 : 0.5 }}
                   >
                     <MessageCircle size={18} color="#fff" />
                   </Pressable>

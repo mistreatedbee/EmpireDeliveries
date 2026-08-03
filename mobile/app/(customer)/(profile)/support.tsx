@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, Pressable, Linking } from 'react-native';
 import { router } from 'expo-router';
-import { ArrowLeft, Phone, Mail, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { ArrowLeft, Phone, Mail, MessageCircle, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
+import { useSupportConversation } from '@/hooks/useChat';
 import { T } from '@/constants/colors';
 
 const CONTACT = [
@@ -48,6 +49,8 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 }
 
 export default function CustomerSupport() {
+  const { data: supportConversation } = useSupportConversation();
+
   return (
     <ScreenWrapper bg="white">
       {/* Header */}
@@ -66,6 +69,22 @@ export default function CustomerSupport() {
         {/* Contact cards */}
         <Text style={{ fontWeight: '800', color: T.text, fontSize: 12, letterSpacing: 1, marginBottom: 10, opacity: 0.5 }}>CONTACT US</Text>
         <View style={{ backgroundColor: T.bg, borderRadius: 14, borderWidth: 1, borderColor: T.border, overflow: 'hidden', marginBottom: 28 }}>
+          <Pressable
+            onPress={() => {
+              if (!supportConversation) return;
+              router.push({ pathname: '/(modals)/chat/[conversationId]', params: { conversationId: supportConversation.id, title: 'Support' } });
+            }}
+            disabled={!supportConversation}
+            style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: T.border, gap: 14, opacity: supportConversation ? 1 : 0.5 }}
+          >
+            <View style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: T.surface, alignItems: 'center', justifyContent: 'center' }}>
+              <MessageCircle size={18} color={T.textSec} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontWeight: '700', color: T.text, fontSize: 14 }}>Chat with Support</Text>
+              <Text style={{ color: T.action, fontSize: 13, marginTop: 2 }}>Get help right in the app</Text>
+            </View>
+          </Pressable>
           {CONTACT.map(({ Icon, label, value, url }, i, arr) => (
             <Pressable
               key={label}

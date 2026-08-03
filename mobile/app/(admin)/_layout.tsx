@@ -1,6 +1,6 @@
 import { Tabs, router } from 'expo-router';
 import React, { useEffect } from 'react';
-import { LayoutDashboard, ClipboardList, Users } from 'lucide-react-native';
+import { LayoutDashboard, ClipboardList, Users, MessageCircle } from 'lucide-react-native';
 import { useAuthStore } from '@/stores/authStore';
 import { Colors } from '@/constants/colors';
 
@@ -53,6 +53,13 @@ export default function AdminLayout() {
         options={{
           title: 'Users',
           tabBarIcon: ({ color }) => <Users size={22} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="support-inbox"
+        options={{
+          title: 'Support',
+          tabBarIcon: ({ color }) => <MessageCircle size={22} color={color} />,
         }}
       />
     </Tabs>

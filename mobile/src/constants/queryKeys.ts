@@ -29,4 +29,11 @@ export const queryKeys = {
   categories: ['categories'] as const,
   coupon: (code: string) => ['coupon', code] as const,
   banners: ['banners'] as const,
+  messages: {
+    orderConversation: (orderId: string, contextType: string) =>
+      ['messages', 'order-conversation', orderId, contextType] as const,
+    supportConversation: ['messages', 'support-conversation'] as const,
+    supportInbox: ['messages', 'support-inbox'] as const,
+    thread: (conversationId: string) => ['messages', 'thread', conversationId] as const,
+  },
 };

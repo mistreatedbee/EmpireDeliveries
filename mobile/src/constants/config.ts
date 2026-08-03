@@ -1,6 +1,7 @@
 export const Config = {
   API_BASE_URL: process.env.EXPO_PUBLIC_API_URL ?? 'https://empire-backend-8066.onrender.com',
   INSFORGE_URL: process.env.EXPO_PUBLIC_INSFORGE_URL ?? 'https://mnf8bzhv.us-east.insforge.app',
+  INSFORGE_ANON_KEY: process.env.EXPO_PUBLIC_INSFORGE_ANON_KEY ?? '',
   REQUEST_TIMEOUT: 15_000,
   APP_SCHEME: 'empire',
   SUPPORT_EMAIL: 'support@empiredeliveries.co.za',

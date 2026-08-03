@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, Pressable, Linking } from 'react-native';
 import { router } from 'expo-router';
-import { ArrowLeft, Phone, Mail, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { ArrowLeft, Phone, Mail, MessageCircle, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { useSupportConversation } from '@/hooks/useChat';
 import { Colors } from '@/constants/colors';
 
 const CONTACT = [
@@ -47,6 +48,8 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 }
 
 export default function DriverSupport() {
+  const { data: supportConversation } = useSupportConversation();
+
   return (
     <View style={{ flex: 1, backgroundColor: Colors.empire.black }}>
       {/* Header */}
@@ -69,6 +72,22 @@ export default function DriverSupport() {
         {/* Contact cards */}
         <Text style={{ fontWeight: '800', color: Colors.empire.black, fontSize: 13, letterSpacing: 1, marginBottom: 12, opacity: 0.5 }}>CONTACT US</Text>
         <View style={{ backgroundColor: '#fff', borderRadius: 18, borderWidth: 1, borderColor: Colors.surface[200], overflow: 'hidden', marginBottom: 32 }}>
+          <Pressable
+            onPress={() => {
+              if (!supportConversation) return;
+              router.push({ pathname: '/(modals)/chat/[conversationId]', params: { conversationId: supportConversation.id, title: 'Support' } });
+            }}
+            disabled={!supportConversation}
+            style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: Colors.surface[100], gap: 14, opacity: supportConversation ? 1 : 0.5 }}
+          >
+            <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: Colors.surface[100], alignItems: 'center', justifyContent: 'center' }}>
+              <MessageCircle size={18} color={Colors.empire.black} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontWeight: '700', color: Colors.empire.black, fontSize: 14 }}>Chat with Support</Text>
+              <Text style={{ color: Colors.gold[500], fontSize: 13, marginTop: 2 }}>Get help right in the app</Text>
+            </View>
+          </Pressable>
           {CONTACT.map(({ Icon, label, value, url }, i, arr) => (
             <Pressable
               key={label}

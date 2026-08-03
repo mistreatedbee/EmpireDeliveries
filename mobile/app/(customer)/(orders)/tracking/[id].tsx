@@ -2,11 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, Pressable, Linking, ActivityIndicator, ScrollView } from 'react-native';
 import { PlatformMap } from '@/components/map/PlatformMap';
 import { useLocalSearchParams, router } from 'expo-router';
-import { Check, Car, Phone, Star } from 'lucide-react-native';
+import { Check, Car, Phone, Star, MessageCircle } from 'lucide-react-native';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { useOrderTracking, useOrderDetail } from '@/hooks/useOrders';
+import { useOrderConversation } from '@/hooks/useChat';
+import { chatService } from '@/services/chat.service';
 import { useLocationStore } from '@/stores/locationStore';
 import { T } from '@/constants/colors';
 import { formatOrderStatus, formatETA } from '@/utils/formatters';
@@ -20,6 +22,19 @@ export default function OrderTrackingScreen() {
   const { data: order } = useOrderDetail(id);
   const { currentLocation } = useLocationStore();
   const [ratePrompted, setRatePrompted] = useState(false);
+  const { data: driverConversation } = useOrderConversation(id, 'customer_driver');
+
+  // Seed the order-scoped chat conversations as soon as we know the restaurant
+  // and (once assigned) the driver — this is the only side of the app with
+  // both ids available, so it's the source of truth for creating them.
+  useEffect(() => {
+    if (!id || !order?.restaurantId) return;
+    void chatService.ensureOrderConversations({
+      orderId: id,
+      restaurantId: order.restaurantId,
+      driverId: tracking?.driver?.id,
+    });
+  }, [id, order?.restaurantId, tracking?.driver?.id]);
 
   // Auto-prompt for rating once order reaches delivered status
   useEffect(() => {
@@ -139,12 +154,27 @@ export default function OrderTrackingScreen() {
                     <Text style={{ fontSize: 13, color: T.textSec }}>{tracking.driver.rating.toFixed(1)} · Your driver</Text>
                   </View>
                 </View>
-                <Pressable
-                  onPress={() => Linking.openURL(`tel:${tracking.driver!.phone}`)}
-                  style={{ backgroundColor: T.action, borderRadius: 12, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
-                >
-                  <Phone size={18} color="#FFF" />
-                </Pressable>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <Pressable
+                    onPress={() => {
+                      if (!driverConversation) return;
+                      router.push({
+                        pathname: '/(modals)/chat/[conversationId]',
+                        params: { conversationId: driverConversation.id, title: `${tracking.driver!.firstName} (Driver)` },
+                      });
+                    }}
+                    disabled={!driverConversation}
+                    style={{ backgroundColor: T.surface, borderWidth: 1, borderColor: T.border, borderRadius: 12, width: 44, height: 44, alignItems: 'center', justifyContent: 'center', opacity: driverConversation ? 1 : 0.5 }}
+                  >
+                    <MessageCircle size={18} color={T.text} />
+                  </Pressable>
+                  <Pressable
+                    onPress={() => Linking.openURL(`tel:${tracking.driver!.phone}`)}
+                    style={{ backgroundColor: T.action, borderRadius: 12, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    <Phone size={18} color="#FFF" />
+                  </Pressable>
+                </View>
               </View>
             )}
 
