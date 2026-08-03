@@ -50,18 +50,23 @@ export async function registerForPushNotifications(): Promise<string | null> {
 
 export function setupNotificationListeners() {
   const foregroundSub = Notifications.addNotificationReceivedListener((notification) => {
-    const data = notification.request.content.data as { type?: string; orderId?: string };
+    const data = notification.request.content.data as { type?: string; orderId?: string; conversationId?: string };
     if (data?.type === 'order_update' && data.orderId) {
       queryClient.invalidateQueries({ queryKey: queryKeys.orders.tracking(data.orderId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.orders.list() });
+    }
+    if (data?.type === 'new_message' && data.conversationId) {
+      queryClient.invalidateQueries({ queryKey: queryKeys.messages.thread(data.conversationId) });
     }
     useNotificationStore.getState().incrementUnread();
     useUIStore.getState().showToast(notification.request.content.body ?? 'New notification', 'info');
   });
 
   const responseSub = Notifications.addNotificationResponseReceivedListener((response) => {
-    const data = response.notification.request.content.data as { orderId?: string; restaurantId?: string };
-    if (data?.orderId) {
+    const data = response.notification.request.content.data as { orderId?: string; restaurantId?: string; type?: string; conversationId?: string };
+    if (data?.type === 'new_message' && data.conversationId) {
+      router.push({ pathname: '/(modals)/chat/[conversationId]', params: { conversationId: data.conversationId } });
+    } else if (data?.orderId) {
       router.push(`/(customer)/(orders)/tracking/${data.orderId}`);
     } else if (data?.restaurantId) {
       router.push(`/(customer)/(home)/restaurant/${data.restaurantId}`);
