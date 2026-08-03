@@ -8,6 +8,9 @@
       "ios",
       "android"
     ],
-    "orientation": "portrait"
+    "orientation": "portrait",
+    "android": {
+      "versionCode": 2
+    }
   }
 }

@@ -9,7 +9,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   icon: './assets/icon.png',
   userInterfaceStyle: 'automatic',
   scheme: 'empire',
-  newArchEnabled: false,
+  newArchEnabled: true,
   splash: {
     image: './assets/splash.png',
     resizeMode: 'contain',
@@ -98,11 +98,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   extra: {
     eas: {
-      projectId: process.env.EAS_PROJECT_ID ?? '33b6bbcd-1212-4683-bb21-41060f60387a',
+      projectId: process.env.EAS_PROJECT_ID ?? 'fccbc80c-6d6d-4387-a748-0ac20f295dcc',
     },
   },
   updates: {
-    url: 'https://u.expo.dev/' + (process.env.EAS_PROJECT_ID ?? '33b6bbcd-1212-4683-bb21-41060f60387a'),
+    url: 'https://u.expo.dev/' + (process.env.EAS_PROJECT_ID ?? 'fccbc80c-6d6d-4387-a748-0ac20f295dcc'),
   },
   runtimeVersion: '1.0.0',
 });
