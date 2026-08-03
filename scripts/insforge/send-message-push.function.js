@@ -71,7 +71,16 @@ export default async function (req) {
       return new Response(JSON.stringify({ sent: 0 }), { status: 200, headers: corsHeaders });
     }
 
-    const truncated = (messageBody ?? '').length > 80 ? `${messageBody.slice(0, 77)}...` : (messageBody ?? '');
+    const { data: sender } = await client.database
+      .from('users')
+      .select('first_name, last_name, role')
+      .eq('id', senderId)
+      .single();
+
+    const ROLE_LABELS = { customer: 'Customer', driver: 'Driver', restaurant: 'Restaurant', admin: 'Empire Support' };
+    const roleLabel = ROLE_LABELS[sender?.role] ?? 'Empire Deliveries';
+    const senderName = sender ? `${sender.first_name ?? ''} ${sender.last_name ?? ''}`.trim() : '';
+    const title = senderName ? `${senderName} · ${roleLabel}` : `Empire Deliveries · ${roleLabel}`;
 
     await Promise.all(
       tokens.map((token) =>
@@ -80,9 +89,13 @@ export default async function (req) {
           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
           body: JSON.stringify({
             to: token,
-            title: 'New message',
-            body: truncated,
+            title,
+            subtitle: 'Empire Deliveries',
+            body: messageBody ?? '',
             sound: 'default',
+            priority: 'high',
+            channelId: 'default',
+            badge: 1,
             data: { type: 'new_message', conversationId },
           }),
         }).catch(() => null)
