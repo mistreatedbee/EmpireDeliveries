@@ -17,7 +17,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   assetBundlePatterns: ['**/*'],
   ios: {
-    supportsTablet: false,
+    supportsTablet: true,
     bundleIdentifier: 'co.za.empiredeliveries',
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
