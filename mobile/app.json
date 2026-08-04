@@ -10,7 +10,7 @@
     ],
     "orientation": "portrait",
     "android": {
-      "versionCode": 4
+      "versionCode": 6
     }
   }
 }
