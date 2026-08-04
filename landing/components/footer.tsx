@@ -73,9 +73,19 @@ export function Footer() {
         </div>
 
         <div className="mt-14 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 text-sm text-white/50 md:flex-row">
-          <p>© {new Date().getFullYear()} Empire Deliveries. All rights reserved.</p>
+          <p>
+            © {new Date().getFullYear()} Empire Deliveries. All rights reserved.{" "}
+            <Link
+              href="/admin-access"
+              tabIndex={-1}
+              aria-hidden="true"
+              className="text-brand-dark outline-none hover:text-brand-dark focus:text-brand-dark"
+            >
+              ·
+            </Link>
+          </p>
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
-            <Link href="#" className="transition-colors hover:text-white">
+            <Link href="/privacy" className="transition-colors hover:text-white">
               Privacy Policy
             </Link>
             <Link href="#" className="transition-colors hover:text-white">
