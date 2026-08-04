@@ -18,34 +18,43 @@ Notifications.setNotificationHandler({
   }),
 });
 
+// Never throws — push notifications are a nice-to-have, not something that
+// should be able to block login/signup navigation or crash the app on
+// launch. In particular, Android's FCM token fetch throws if
+// google-services.json / Firebase isn't configured for this project; that
+// must degrade to "no push token" rather than propagate to callers.
 export async function registerForPushNotifications(): Promise<string | null> {
-  if (!Device.isDevice) return null;
+  try {
+    if (!Device.isDevice) return null;
 
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  let finalStatus = existingStatus;
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
 
-  if (existingStatus !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+
+    if (finalStatus !== 'granted') return null;
+
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'Empire Deliveries',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#D4AF37',
+      });
+    }
+
+    const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+    if (!projectId) return null;
+
+    const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+    useNotificationStore.getState().setPushToken(token);
+    return token;
+  } catch {
+    return null;
   }
-
-  if (finalStatus !== 'granted') return null;
-
-  if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('default', {
-      name: 'Empire Deliveries',
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#D4AF37',
-    });
-  }
-
-  const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-  if (!projectId) return null;
-
-  const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
-  useNotificationStore.getState().setPushToken(token);
-  return token;
 }
 
 export function setupNotificationListeners() {
