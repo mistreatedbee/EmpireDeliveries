@@ -23,7 +23,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   if (res.status === 401) {
     clearAdminSession()
-    if (typeof window !== "undefined") window.location.href = "/admin/login"
+    if (typeof window !== "undefined") window.location.href = "/admin-access"
     throw new AdminApiError("Session expired.", 401)
   }
 

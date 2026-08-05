@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { Crown, Eye, EyeOff, Shield, AlertCircle } from "lucide-react"
+import { adminLogin, AdminAuthError } from "@/lib/adminAuth"
 
 export default function AdminAccessPage() {
   const [email, setEmail] = useState("")
@@ -15,16 +16,15 @@ export default function AdminAccessPage() {
     setError("")
     setLoading(true)
 
-    await new Promise((r) => setTimeout(r, 1000))
-
-    if (email === "empiredelivery013@gmail.com" && password === "EMP@Admin2026!") {
+    try {
+      await adminLogin(email, password)
       localStorage.setItem("empire_admin_session", "true")
       window.location.href = "/admin"
-    } else {
-      setError("Invalid credentials. Access denied.")
+    } catch (err) {
+      setError(err instanceof AdminAuthError ? err.message : "Invalid credentials. Access denied.")
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
   return (
