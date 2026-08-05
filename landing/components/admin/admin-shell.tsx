@@ -22,13 +22,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const token = getStoredToken()
+    const adminSession = window.localStorage.getItem("empire_admin_session")
     const storedUser = getStoredUser()
-    if (!token || !storedUser) {
-      router.replace("/admin/login")
+    if (!token && !adminSession) {
+      router.replace("/admin-access")
       return
     }
-    restoreInsforgeSession()
-    setUser(storedUser)
+    if (token) restoreInsforgeSession()
+    setUser(storedUser ?? { id: "", firstName: "Admin", lastName: "", email: "empiredelivery013@gmail.com", role: "admin" })
     setReady(true)
   }, [router])
 
@@ -69,7 +70,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             className="mt-1 w-full justify-start"
             onClick={() => {
               adminLogout()
-              router.replace("/admin/login")
+              window.localStorage.removeItem("empire_admin_session")
+              router.replace("/admin-access")
             }}
           >
             Sign out

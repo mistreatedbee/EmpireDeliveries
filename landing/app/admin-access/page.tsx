@@ -18,6 +18,7 @@ export default function AdminAccessPage() {
     await new Promise((r) => setTimeout(r, 1000))
 
     if (email === "empiredelivery013@gmail.com" && password === "EMP@Admin2026!") {
+      localStorage.setItem("empire_admin_session", "true")
       window.location.href = "/admin"
     } else {
       setError("Invalid credentials. Access denied.")
