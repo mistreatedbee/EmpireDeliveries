@@ -6,6 +6,7 @@ import { Check } from 'lucide-react-native';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { useCartStore } from '@/stores/cartStore';
 import { useUIStore } from '@/stores/uiStore';
 import { restaurantService } from '@/services/restaurant.service';
@@ -20,7 +21,7 @@ export default function FoodDetailScreen() {
   const [selectedAddons, setSelectedAddons] = useState<Addon[]>([]);
   const [instructions, setInstructions] = useState('');
 
-  const { data: item, isLoading } = useQuery({
+  const { data: item, isLoading, isError, refetch } = useQuery({
     queryKey: [...queryKeys.restaurants.menu(restaurantId), id],
     queryFn: () => restaurantService.getMenuItem(restaurantId, id),
     enabled: !!id && !!restaurantId,
@@ -61,7 +62,20 @@ export default function FoodDetailScreen() {
     );
   }
 
-  if (!item) return null;
+  // Fetch failed (network error, timeout, server error) — show a retry state instead
+  // of a blank screen. `!id`/`!restaurantId` (bad navigation params) lands here too.
+  if (!item) {
+    return (
+      <ScreenWrapper bg="white">
+        <EmptyState
+          title={isError ? "Couldn't load this item" : 'Item not found'}
+          subtitle={isError ? 'Check your connection and try again.' : "This item may no longer be available."}
+          actionLabel={isError ? 'Retry' : 'Go back'}
+          onAction={isError ? () => refetch() : () => router.back()}
+        />
+      </ScreenWrapper>
+    );
+  }
 
   return (
     <ScreenWrapper bg="white" edges={['bottom']}>
