@@ -23,6 +23,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { setupNotificationListeners, registerForPushNotifications } from '@/lib/notifications';
 import { notificationService } from '@/services/notification.service';
 import Toast from '@/components/ui/Toast';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 
 injectAuthStore(useAuthStore);
 
@@ -55,7 +56,9 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaProvider>
-          <Slot />
+          <ErrorBoundary scope="root">
+            <Slot />
+          </ErrorBoundary>
           <Toast />
         </SafeAreaProvider>
       </GestureHandlerRootView>
