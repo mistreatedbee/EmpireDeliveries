@@ -13,6 +13,7 @@ export function useOrders(status?: string) {
   return useQuery({
     queryKey: queryKeys.orders.list(status),
     queryFn: () => orderService.getList(status),
+    refetchInterval: status?.includes('placed') || status?.includes('confirmed') ? 15000 : false,
   });
 }
 
@@ -34,12 +35,25 @@ export function useOrderTracking(id: string) {
     if (!id || !token) return;
     setIsLoading(true);
     setIsError(false);
-    let pollTimer: ReturnType<typeof setInterval> | null = null;
+    let fallbackTimer: ReturnType<typeof setInterval> | null = null;
 
     const es = new EventSource(
       `${Config.API_BASE_URL}/orders/${id}/tracking/stream`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
+
+    const pollOnce = () => {
+      void orderService.getTracking(id).then((tracking) => {
+        setData(tracking);
+        setIsLoading(false);
+        if (tracking.status === 'delivered' || tracking.status === 'cancelled') {
+          if (fallbackTimer) clearInterval(fallbackTimer);
+        }
+      }).catch(() => null);
+    };
+
+    pollOnce();
+    const livePoll = setInterval(pollOnce, 6000);
 
     es.addEventListener('message', (e) => {
       if (e.data) {
@@ -53,25 +67,16 @@ export function useOrderTracking(id: string) {
     es.addEventListener('error', () => {
       setIsLoading(false);
       setIsError(true);
-      void orderService.getTracking(id).then((tracking) => {
-        setData(tracking);
-        setIsError(false);
-      }).catch(() => null);
-
-      pollTimer = setInterval(() => {
-        void orderService.getTracking(id).then((tracking) => {
-          setData(tracking);
-          setIsError(false);
-          if (tracking.status === 'delivered' || tracking.status === 'cancelled') {
-            if (pollTimer) clearInterval(pollTimer);
-          }
-        }).catch(() => null);
-      }, OrderPollingIntervals.on_way ?? 10000);
+      pollOnce();
+      if (!fallbackTimer) {
+        fallbackTimer = setInterval(pollOnce, OrderPollingIntervals.on_way ?? 8000);
+      }
     });
 
     return () => {
       es.close();
-      if (pollTimer) clearInterval(pollTimer);
+      clearInterval(livePoll);
+      if (fallbackTimer) clearInterval(fallbackTimer);
     };
   }, [id, token]);
 

@@ -21,6 +21,7 @@ export default function DriverDashboard() {
   const [countdown, setCountdown] = useState(COUNTDOWN_SECONDS);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const locationWatchRef = useRef<Location.LocationSubscription | null>(null);
+  const resumedDeliveryRef = useRef(false);
 
   const { data: stats, isLoading: statsLoading, isError: statsError, refetch: refetchStats } = useQuery({
     queryKey: ['driver', 'stats'],
@@ -33,8 +34,24 @@ export default function DriverDashboard() {
     queryKey: ['driver', 'available'],
     queryFn: driverService.getAvailableDelivery,
     enabled: online,
-    refetchInterval: online ? 8000 : false,
+    refetchInterval: online ? 5000 : false,
   });
+
+  const { data: activeDelivery } = useQuery({
+    queryKey: ['driver', 'active'],
+    queryFn: driverService.getActiveDelivery,
+    enabled: online,
+  });
+
+  useEffect(() => {
+    if (!activeDelivery?.orderId) {
+      resumedDeliveryRef.current = false;
+      return;
+    }
+    if (!online || resumedDeliveryRef.current) return;
+    resumedDeliveryRef.current = true;
+    router.push({ pathname: '/(driver)/delivery', params: { orderId: activeDelivery.orderId } });
+  }, [online, activeDelivery?.orderId]);
 
   const { data: history } = useQuery({
     queryKey: ['driver', 'history'],

@@ -42,6 +42,13 @@ export default function ActiveDelivery() {
     enabled: step !== 'complete',
   });
 
+  useEffect(() => {
+    if (!delivery?.status) return;
+    if (delivery.status === 'on_way' || delivery.status === 'picked_up') {
+      setStep('deliver');
+    }
+  }, [delivery?.status]);
+
   const activeOrderId = orderId ?? delivery?.orderId;
   const { data: customerConversation } = useOrderConversation(activeOrderId, 'customer_driver');
 

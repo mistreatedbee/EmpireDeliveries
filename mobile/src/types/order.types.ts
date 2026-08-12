@@ -5,6 +5,7 @@ export type OrderStatus =
   | 'placed'
   | 'confirmed'
   | 'preparing'
+  | 'ready'
   | 'picked_up'
   | 'on_way'
   | 'delivered'

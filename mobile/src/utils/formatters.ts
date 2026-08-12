@@ -35,6 +35,7 @@ export function formatOrderStatus(status: string): string {
     placed: 'Order Placed',
     confirmed: 'Confirmed',
     preparing: 'Being Prepared',
+    ready: 'Ready for Pickup',
     picked_up: 'Picked Up',
     on_way: 'On the Way',
     delivered: 'Delivered',

@@ -43,15 +43,17 @@ import { canCancelOrderStatus } from '@/utils/orderStatus';
 import { statusSubtitle } from '@/utils/normalizeOrder';
 import { T } from '@/constants/colors';
 import { formatOrderStatus, formatETA, formatPrice, formatDistanceAway } from '@/utils/formatters';
+import { useAuthStore } from '@/stores/authStore';
 import { getUserErrorMessage } from '@/utils/errorHandler';
 
-const STEPS = ['placed', 'confirmed', 'preparing', 'picked_up', 'on_way', 'delivered'] as const;
-const STEP_LABELS = ['Placed', 'Confirmed', 'Preparing', 'Picked Up', 'On the Way', 'Delivered'];
+const STEPS = ['placed', 'confirmed', 'preparing', 'ready', 'picked_up', 'on_way', 'delivered'] as const;
+const STEP_LABELS = ['Placed', 'Confirmed', 'Preparing', 'Ready', 'Picked Up', 'On the Way', 'Delivered'];
 
 export default function OrderTrackingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const orderId = String(id ?? '');
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
   const { showToast } = useUIStore();
   const { currentLocation } = useLocationStore();
   const { data: tracking, isLoading: trackingLoading } = useOrderTracking(orderId);
@@ -73,10 +75,11 @@ export default function OrderTrackingScreen() {
     if (!orderId || !order?.restaurantId) return;
     void chatService.ensureOrderConversations({
       orderId,
+      customerId: user?.id,
       restaurantId: order.restaurantId,
       driverId: tracking?.driver?.id,
     });
-  }, [orderId, order?.restaurantId, tracking?.driver?.id]);
+  }, [orderId, user?.id, order?.restaurantId, tracking?.driver?.id]);
 
   useEffect(() => {
     if (status === 'delivered' && !ratePrompted) {

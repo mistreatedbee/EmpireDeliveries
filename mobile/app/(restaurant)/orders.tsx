@@ -29,7 +29,7 @@ export default function RestaurantOrders() {
   const { data: orders, isLoading } = useQuery({
     queryKey: ['restaurant', 'orders', filter],
     queryFn: () => restaurantManagementService.getOrders(statusParam),
-    refetchInterval: 15000,
+    refetchInterval: 8000,
   });
 
   const confirmMutation = useMutation({

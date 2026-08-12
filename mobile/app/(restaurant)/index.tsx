@@ -31,7 +31,7 @@ export default function RestaurantDashboard() {
   const { data: activeOrders, isLoading: ordersLoading } = useQuery({
     queryKey: ['restaurant', 'orders', 'active'],
     queryFn: () => restaurantManagementService.getOrders('placed,confirmed,preparing'),
-    refetchInterval: 10000,
+    refetchInterval: 8000,
   });
 
   const { data: analytics } = useQuery({

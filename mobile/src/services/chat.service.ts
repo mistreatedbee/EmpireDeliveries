@@ -15,13 +15,17 @@ export const chatService = {
   // the only place that can seed all three with the right participant ids).
   async ensureOrderConversations({
     orderId,
+    customerId,
     restaurantId,
     driverId,
   }: {
     orderId: string;
+    customerId?: string;
     restaurantId?: string;
     driverId?: string;
   }): Promise<void> {
+    if (!customerId) return;
+
     const contexts: Array<{ context_type: ConversationContextType; restaurant_id?: string; driver_id?: string }> = [
       ...(restaurantId ? [{ context_type: 'customer_restaurant' as const, restaurant_id: restaurantId }] : []),
       ...(driverId ? [{ context_type: 'customer_driver' as const, driver_id: driverId }] : []),
@@ -40,6 +44,7 @@ export const chatService = {
       await insforge.database.from('conversations').insert({
         context_type: ctx.context_type,
         order_id: orderId,
+        customer_id: customerId,
         restaurant_id: ctx.restaurant_id ?? restaurantId ?? null,
         driver_id: ctx.driver_id ?? null,
       });

@@ -18,7 +18,7 @@ import { formatPrice, formatDate, formatOrderStatus } from '@/utils/formatters';
 type Tab = 'active' | 'completed' | 'cancelled';
 
 const STATUS_MAP: Record<Tab, string[]> = {
-  active: ['placed', 'confirmed', 'preparing', 'picked_up', 'on_way'],
+  active: ['placed', 'confirmed', 'preparing', 'ready', 'picked_up', 'on_way'],
   completed: ['delivered'],
   cancelled: ['cancelled'],
 };

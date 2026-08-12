@@ -164,6 +164,7 @@ export function statusSubtitle(status: OrderStatus | string, opts?: { driverAcce
     placed: 'Waiting for the restaurant to confirm',
     confirmed: 'Restaurant confirmed — your order is being prepared',
     preparing: 'The kitchen is preparing your food',
+    ready: 'Your order is packed and waiting for the driver',
     picked_up: 'Your driver has collected your order',
     on_way: 'Your driver is heading to you',
     delivered: 'Enjoy your meal!',

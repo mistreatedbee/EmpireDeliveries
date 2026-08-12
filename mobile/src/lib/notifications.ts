@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { queryClient } from './queryClient';
 import { queryKeys } from '@/constants/queryKeys';
 import { useNotificationStore } from '@/stores/notificationStore';
+import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 
 /** Android Expo Go (SDK 53+) removed remote push — skip loading the native module. */
@@ -85,6 +86,12 @@ export function setupNotificationListeners() {
             queryClient.invalidateQueries({ queryKey: queryKeys.orders.tracking(data.orderId) });
             queryClient.invalidateQueries({ queryKey: queryKeys.orders.list() });
           }
+          if (data?.type === 'restaurant_new_order') {
+            queryClient.invalidateQueries({ queryKey: ['restaurant', 'orders'] });
+          }
+          if (data?.type === 'driver_new_delivery') {
+            queryClient.invalidateQueries({ queryKey: ['driver', 'available'] });
+          }
           if (data?.type === 'new_message' && data.conversationId) {
             queryClient.invalidateQueries({ queryKey: queryKeys.messages.thread(data.conversationId) });
           }
@@ -101,13 +108,20 @@ export function setupNotificationListeners() {
             type?: string;
             conversationId?: string;
           };
+          const role = useAuthStore.getState().user?.role;
           if (data?.type === 'new_message' && data.conversationId) {
             router.push({
               pathname: '/(modals)/chat/[conversationId]',
               params: { conversationId: data.conversationId },
             });
-          } else if (data?.orderId) {
+          } else if (data?.type === 'restaurant_new_order') {
+            router.push('/(restaurant)/orders');
+          } else if (data?.type === 'driver_new_delivery') {
+            router.push('/(driver)');
+          } else if (data?.orderId && role === 'customer') {
             router.push(`/(customer)/(orders)/tracking/${data.orderId}`);
+          } else if (data?.orderId && role === 'driver') {
+            router.push({ pathname: '/(driver)/delivery', params: { orderId: data.orderId } });
           } else if (data?.restaurantId) {
             router.push(`/(customer)/(home)/restaurant/${data.restaurantId}`);
           }
