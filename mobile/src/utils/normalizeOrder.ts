@@ -1,6 +1,8 @@
 import { Order, OrderItem, OrderStatus, TrackingUpdate } from '@/types/order.types';
 import { formatDistanceAway } from '@/utils/formatters';
 
+export { canCancelOrderStatus } from '@/utils/orderStatus';
+
 type RawRecord = Record<string, unknown>;
 
 function toNumber(value: unknown, fallback = 0): number {

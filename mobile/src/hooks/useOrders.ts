@@ -39,7 +39,10 @@ export function useOrderTracking(id: string) {
 
     const es = new EventSource(
       `${Config.API_BASE_URL}/orders/${id}/tracking/stream`,
-      { headers: { Authorization: `Bearer ${token}` } }
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        lineEndingCharacter: '\n',
+      }
     );
 
     const pollOnce = () => {
