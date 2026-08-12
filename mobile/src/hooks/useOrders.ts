@@ -4,6 +4,7 @@ import EventSource from 'react-native-sse';
 import { orderService } from '@/services/order.service';
 import { queryKeys } from '@/constants/queryKeys';
 import { TrackingUpdate } from '@/types/order.types';
+import { normalizeTrackingUpdate } from '@/utils/normalizeOrder';
 import { Config } from '@/constants/config';
 import { OrderPollingIntervals } from '@/constants/config';
 import { useAuthStore } from '@/stores/authStore';
@@ -43,7 +44,7 @@ export function useOrderTracking(id: string) {
     es.addEventListener('message', (e) => {
       if (e.data) {
         try {
-          setData(JSON.parse(e.data) as TrackingUpdate);
+          setData(normalizeTrackingUpdate(JSON.parse(e.data) as Record<string, unknown>, id));
         } catch { /* ignore malformed frames */ }
         setIsLoading(false);
       }

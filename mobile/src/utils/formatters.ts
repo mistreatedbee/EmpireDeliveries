@@ -7,6 +7,12 @@ export function formatDistance(meters: number): string {
   return `${(meters / 1000).toFixed(1)}km`;
 }
 
+export function formatDistanceAway(km: number | null | undefined): string {
+  if (km == null || !Number.isFinite(km)) return 'Distance updating…';
+  if (km < 1) return `${Math.max(1, Math.round(km * 1000))} m away`;
+  return `${km.toFixed(1)} km away`;
+}
+
 export function formatETA(minutes: number): string {
   if (minutes < 60) return `${minutes} min`;
   const h = Math.floor(minutes / 60);

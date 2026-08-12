@@ -18,7 +18,7 @@ interface PlatformMapProps {
 /** Use react-native-maps everywhere on Android — MapLibre native modules break Expo Go. */
 export function PlatformMap({ style, region, markers }: PlatformMapProps) {
   return (
-    <RNMapView style={style} initialRegion={region}>
+    <RNMapView style={style} region={region} initialRegion={region}>
       {markers.map((m) => (
         <RNMarker key={m.id} coordinate={{ latitude: m.latitude, longitude: m.longitude }}>
           {m.children}

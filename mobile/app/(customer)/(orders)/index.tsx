@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useOrders } from '@/hooks/useOrders';
 import { Order } from '@/types/order.types';
+import { canCancelOrderStatus } from '@/utils/normalizeOrder';
 import { orderService } from '@/services/order.service';
 import { queryKeys } from '@/constants/queryKeys';
 import { useUIStore } from '@/stores/uiStore';
@@ -24,7 +25,7 @@ const STATUS_MAP: Record<Tab, string[]> = {
 
 function OrderCard({ order, onCancel, onRate, onReorder }: { order: Order; onCancel: () => void; onRate?: () => void; onReorder?: () => void }) {
   const isActive = STATUS_MAP.active.includes(order.status);
-  const canCancel = order.status === 'placed';
+  const canCancel = canCancelOrderStatus(order.status);
   const canReorder = order.status === 'delivered' || order.status === 'cancelled';
 
   return (

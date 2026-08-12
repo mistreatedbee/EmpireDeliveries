@@ -8,6 +8,7 @@ import {
   OrderQuotePayload,
 } from '@/types/order.types';
 import { ApiResponse, PaginatedResponse } from '@/types/api.types';
+import { normalizeOrder, normalizeTrackingUpdate } from '@/utils/normalizeOrder';
 
 export const orderService = {
   async getQuote(payload: OrderQuotePayload): Promise<OrderQuote> {
@@ -17,16 +18,27 @@ export const orderService = {
 
   async create(payload: CreateOrderPayload): Promise<Order> {
     const res = await api.post<never, ApiResponse<Order>>('/orders', payload);
-    return res.data;
+    return normalizeOrder(res.data as unknown as Record<string, unknown>);
   },
 
   async getList(status?: string, page = 1): Promise<PaginatedResponse<Order>> {
-    return api.get('/orders', { params: { status, page } });
+    const res = await api.get<never, ApiResponse<Record<string, unknown>[]>>('/orders', { params: { status, page } });
+    const rows = res.data ?? [];
+    return {
+      success: res.success,
+      data: rows.map((row) => normalizeOrder(row)),
+      pagination: {
+        page: 1,
+        limit: rows.length,
+        total: rows.length,
+        totalPages: 1,
+      },
+    };
   },
 
   async getById(id: string): Promise<Order> {
-    const res = await api.get<never, ApiResponse<Order>>(`/orders/${id}`);
-    return res.data;
+    const res = await api.get<never, ApiResponse<Record<string, unknown>>>(`/orders/${id}`);
+    return normalizeOrder(res.data);
   },
 
   async getPaymentStatus(id: string): Promise<{ orderId: string; paymentStatus: string; status: string; paymentMethod?: string }> {
@@ -37,13 +49,18 @@ export const orderService = {
   },
 
   async getTracking(id: string): Promise<TrackingUpdate> {
-    const res = await api.get<never, ApiResponse<TrackingUpdate>>(`/orders/${id}/tracking`);
-    return res.data;
+    const res = await api.get<never, ApiResponse<Record<string, unknown>>>(`/orders/${id}/tracking`);
+    return normalizeTrackingUpdate(res.data, id);
   },
 
   async cancel(id: string, reason?: string): Promise<Order> {
-    const res = await api.post<never, ApiResponse<Order>>(`/orders/${id}/cancel`, { reason });
-    return res.data;
+    const res = await api.post<never, ApiResponse<Record<string, unknown>>>(`/orders/${id}/cancel`, { reason });
+    return normalizeOrder(res.data);
+  },
+
+  async updateDeliveryNotes(id: string, deliveryNotes: string): Promise<Order> {
+    const res = await api.patch<never, ApiResponse<Record<string, unknown>>>(`/orders/${id}/notes`, { deliveryNotes });
+    return normalizeOrder(res.data);
   },
 
   async rate(id: string, rating: number, review?: string): Promise<Order> {

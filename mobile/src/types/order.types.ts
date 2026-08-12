@@ -73,6 +73,12 @@ export interface TrackingUpdate {
   } & Omit<Driver, 'id'> & { id: string };
   estimatedArrival?: string;
   eta?: number;
+  driverAccepted?: boolean;
+  driverAcceptedAt?: string;
+  driverDistanceKm?: number | null;
+  restaurantDistanceKm?: number | null;
+  customerLocation?: { latitude: number; longitude: number } | null;
+  restaurantLocation?: { latitude: number; longitude: number } | null;
   waypoints?: Array<{ latitude: number; longitude: number }>;
   updatedAt: string;
 }
