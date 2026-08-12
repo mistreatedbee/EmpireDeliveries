@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useOrders } from '@/hooks/useOrders';
 import { Order } from '@/types/order.types';
-import { canCancelOrderStatus } from '@/utils/normalizeOrder';
+import { canCancelOrderStatus } from '@/utils/orderStatus';
 import { orderService } from '@/services/order.service';
 import { queryKeys } from '@/constants/queryKeys';
 import { useUIStore } from '@/stores/uiStore';

@@ -15,10 +15,6 @@ function splitName(fullName: string): { firstName: string; lastName: string } {
   return { firstName: parts[0], lastName: parts.slice(1).join(' ') };
 }
 
-export function canCancelOrderStatus(status: OrderStatus | string): boolean {
-  return ['pending_payment', 'placed', 'confirmed', 'preparing'].includes(status);
-}
-
 export function normalizeOrderItem(raw: RawRecord): OrderItem {
   const quantity = toNumber(raw.quantity, 1);
   const unitPrice = toNumber(raw.unitPrice ?? raw.unit_price);
