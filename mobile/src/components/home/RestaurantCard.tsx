@@ -1,5 +1,6 @@
 import React from 'react';
-import { Pressable, Text, View, Image } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Star, Clock, Heart } from 'lucide-react-native';
 import { Restaurant } from '@/types/restaurant.types';
@@ -29,11 +30,19 @@ export function RestaurantCard({ restaurant, wide = false }: RestaurantCardProps
       }}
     >
       <View style={{ position: 'relative' }}>
-        <Image
-          source={{ uri: coverImage }}
-          style={{ width: '100%', height: 140, backgroundColor: T.surface }}
-          resizeMode="cover"
-        />
+        {coverImage ? (
+          <Image
+            source={{ uri: coverImage }}
+            style={{ width: '100%', height: 140, backgroundColor: T.surface }}
+            contentFit="cover"
+            transition={200}
+            cachePolicy="memory-disk"
+          />
+        ) : (
+          <View style={{ width: '100%', height: 140, backgroundColor: T.surface, alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ fontSize: 36 }}>🍽️</Text>
+          </View>
+        )}
         {promoText && (
           <View style={{ position: 'absolute', top: 10, left: 10, backgroundColor: T.danger, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 }}>
             <Text style={{ color: '#FFF', fontSize: 11, fontWeight: '700' }}>{promoText}</Text>

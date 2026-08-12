@@ -130,6 +130,7 @@ export default function EditMenuItem() {
       const mimeType = `image/${ext === 'jpg' ? 'jpeg' : ext}`;
       const form = new FormData();
       form.append('file', { uri: asset.uri, name: filename, type: mimeType } as unknown as Blob);
+      form.append('folder', 'menu-images');
       const res = await api.post<never, { data: { url: string } }>('/uploads/image', form, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });

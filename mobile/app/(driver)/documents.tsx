@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, FileText, Trash2, Plus } from 'lucide-react-native';
 import { driverService, DriverDocument } from '@/services/driver.service';
 import { Colors } from '@/constants/colors';
+import { getUserErrorMessage } from '@/utils/errorHandler';
 
 const DOC_TYPES = ["Driver's Licence", 'ID Document', 'Vehicle Licence Disc', 'PDP Certificate', 'Insurance Certificate'];
 
@@ -41,7 +42,7 @@ export default function DriverDocuments() {
       setForm({ type: '', referenceNo: '', expiryDate: '' });
       setError('');
     },
-    onError: (err: { message?: string }) => setError(err.message ?? 'Failed to add document.'),
+    onError: (err) => setError(getUserErrorMessage(err, 'Failed to add document. Please try again.')),
   });
 
   const deleteMutation = useMutation({

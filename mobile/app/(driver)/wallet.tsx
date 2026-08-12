@@ -29,6 +29,7 @@ import {
 import { driverService, WalletTransaction } from '@/services/driver.service';
 import { useUIStore } from '@/stores/uiStore';
 import { T, Fonts, Shadows, Radius } from '@/constants/colors';
+import { getUserErrorMessage } from '@/utils/errorHandler';
 
 const QUICK_AMOUNTS = [100, 200, 500, 1000];
 const MIN_WITHDRAWAL = 50;
@@ -103,8 +104,8 @@ export default function DriverWallet() {
       void queryClient.invalidateQueries({ queryKey: ['driver', 'wallet'] });
       showToast(result.message ?? 'Withdrawal requested. Processed in 2–3 business days.', 'success');
     },
-    onError: (err: any) => {
-      showToast(err?.message ?? 'Could not process withdrawal. Please try again.', 'error');
+    onError: (err) => {
+      showToast(getUserErrorMessage(err, 'Could not process withdrawal. Please try again.'), 'error');
     },
   });
 

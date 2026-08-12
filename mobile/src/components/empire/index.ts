@@ -32,6 +32,9 @@ export type { QuantityStepperProps } from './QuantityStepper';
 export { EmptyState } from './EmptyState';
 export type { EmptyStateProps } from './EmptyState';
 
+export { QueryErrorState } from './QueryErrorState';
+export type { QueryErrorStateProps } from './QueryErrorState';
+
 export { Stepper } from './Stepper';
 export type { StepperProps, Step } from './Stepper';
 

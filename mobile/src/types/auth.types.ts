@@ -8,6 +8,9 @@ export interface User {
   phone: string;
   role: UserRole;
   profileImage?: string;
+  approvalStatus?: 'pending' | 'approved' | 'rejected' | 'suspended';
+  suspensionReason?: string | null;
+  subscriptionExpiresAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }

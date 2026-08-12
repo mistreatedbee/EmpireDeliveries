@@ -15,6 +15,28 @@ const channels = [
 
 export function Contact() {
   const [sent, setSent] = useState(false)
+  const [error, setError] = useState("")
+  const [name, setName] = useState("")
+  const [email, setEmail] = useState("")
+  const [topic, setTopic] = useState("A customer")
+  const [message, setMessage] = useState("")
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    setError("")
+    if (!name.trim() || !email.trim() || !message.trim()) {
+      setError("Please fill in your name, email, and message.")
+      return
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setError("Please enter a valid email address.")
+      return
+    }
+    const subject = encodeURIComponent(`Empire Deliveries enquiry — ${topic}`)
+    const body = encodeURIComponent(`Name: ${name.trim()}\nEmail: ${email.trim()}\nTopic: ${topic}\n\n${message.trim()}`)
+    window.location.href = `mailto:hello@empiredeliveries.com?subject=${subject}&body=${body}`
+    setSent(true)
+  }
 
   return (
     <section id="contact" className="scroll-mt-20 bg-secondary/40 py-20 sm:py-28">
@@ -35,7 +57,9 @@ export function Contact() {
                       <c.icon className="size-5" />
                     </span>
                     <p className="mt-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">{c.label}</p>
-                    <p className="mt-0.5 text-sm font-semibold text-foreground break-words">{c.value}</p>
+                    <a href={`mailto:${c.value}`} className="mt-0.5 block text-sm font-semibold text-foreground break-words hover:text-primary">
+                      {c.value}
+                    </a>
                   </div>
                 ))}
               </div>
@@ -57,26 +81,21 @@ export function Contact() {
           </Reveal>
 
           <Reveal direction="left">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault()
-                setSent(true)
-              }}
-              className="rounded-3xl border border-border bg-card p-7 sm:p-8"
-            >
+            <form onSubmit={handleSubmit} className="rounded-3xl border border-border bg-card p-7 sm:p-8">
               {sent ? (
                 <div className="flex h-full flex-col items-center justify-center py-10 text-center">
                   <span className="flex size-14 items-center justify-center rounded-full bg-accent/15 text-accent">
                     <CheckCircle2 className="size-7" />
                   </span>
-                  <h3 className="mt-4 font-display text-xl font-semibold text-foreground">Message sent!</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">Thanks for reaching out. Our team will get back to you shortly.</p>
+                  <h3 className="mt-4 font-display text-xl font-semibold text-foreground">Ready to send!</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">Your email app should open with your message. Send it to complete your enquiry.</p>
                 </div>
               ) : (
                 <div className="grid gap-4">
+                  {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <Field label="Full name" id="name" placeholder="Naledi Mokoena" />
-                    <Field label="Email" id="email" type="email" placeholder="you@email.com" />
+                    <Field label="Full name" id="name" placeholder="Naledi Mokoena" value={name} onChange={setName} />
+                    <Field label="Email" id="email" type="email" placeholder="you@email.com" value={email} onChange={setEmail} />
                   </div>
                   <div className="grid gap-2">
                     <label htmlFor="topic" className="text-sm font-medium text-foreground">
@@ -84,6 +103,8 @@ export function Contact() {
                     </label>
                     <select
                       id="topic"
+                      value={topic}
+                      onChange={(e) => setTopic(e.target.value)}
                       className="rounded-xl border border-input bg-background px-4 py-2.5 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                     >
                       <option>A customer</option>
@@ -99,6 +120,8 @@ export function Contact() {
                     <textarea
                       id="message"
                       rows={4}
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
                       placeholder="How can we help?"
                       className="rounded-xl border border-input bg-background px-4 py-2.5 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                     />
@@ -124,11 +147,15 @@ function Field({
   id,
   type = "text",
   placeholder,
+  value,
+  onChange,
 }: {
   label: string
   id: string
   type?: string
   placeholder?: string
+  value: string
+  onChange: (v: string) => void
 }) {
   return (
     <div className="grid gap-2">
@@ -138,6 +165,8 @@ function Field({
       <input
         id={id}
         type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         className="rounded-xl border border-input bg-background px-4 py-2.5 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
       />

@@ -1,9 +1,10 @@
 import { insforge } from '@/lib/insforgeClient';
 import { Conversation, ConversationContextType, Message } from '@/types/chat.types';
+import { getUserErrorMessage } from '@/utils/errorHandler';
 
-function unwrap<T>(result: { data: T | null; error: { message: string } | null }): T {
-  if (result.error) throw new Error(result.error.message);
-  if (result.data == null) throw new Error('Not found');
+function unwrap<T>(result: { data: T | null; error: { message: string; code?: string } | null }): T {
+  if (result.error) throw new Error(getUserErrorMessage(result.error));
+  if (result.data == null) throw new Error('We could not find what you were looking for.');
   return result.data;
 }
 
@@ -52,7 +53,7 @@ export const chatService = {
       .eq('order_id', orderId)
       .eq('context_type', contextType)
       .maybeSingle();
-    if (res.error) throw new Error(res.error.message);
+    if (res.error) throw new Error(getUserErrorMessage(res.error));
     return (res.data as Conversation | null) ?? null;
   },
 
@@ -79,7 +80,7 @@ export const chatService = {
       .select('*')
       .eq('context_type', 'support')
       .order('last_message_at', { ascending: false });
-    if (res.error) throw new Error(res.error.message);
+    if (res.error) throw new Error(getUserErrorMessage(res.error));
     return (res.data as Conversation[]) ?? [];
   },
 
@@ -89,7 +90,7 @@ export const chatService = {
       .select('*')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
-    if (res.error) throw new Error(res.error.message);
+    if (res.error) throw new Error(getUserErrorMessage(res.error));
     return (res.data as Message[]) ?? [];
   },
 

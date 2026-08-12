@@ -110,6 +110,33 @@ export interface Order {
   review?: string;
 }
 
+export interface CouponValidation {
+  code: string;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+  maxDiscount?: number;
+  minOrderAmount?: number;
+  valid: boolean;
+  message?: string;
+}
+
+export interface OrderQuotePayload {
+  restaurantId: string;
+  items: Array<{
+    menuItemId: string;
+    quantity: number;
+    addonIds: string[];
+    instructions?: string;
+  }>;
+  deliveryAddressId?: string;
+  deliveryLatitude?: number;
+  deliveryLongitude?: number;
+  restaurantLatitude?: number;
+  restaurantLongitude?: number;
+  couponCode?: string;
+  loyaltyPointsToRedeem?: number;
+}
+
 export interface CreateOrderPayload {
   restaurantId: string;
   items: Array<{
@@ -119,18 +146,38 @@ export interface CreateOrderPayload {
     instructions?: string;
   }>;
   deliveryAddressId: string;
+  deliveryLatitude?: number;
+  deliveryLongitude?: number;
+  restaurantLatitude?: number;
+  restaurantLongitude?: number;
   paymentMethod: string;
   couponCode?: string;
   deliveryNotes?: string;
   loyaltyPointsToRedeem?: number;
 }
 
-export interface CouponValidation {
-  code: string;
-  discountType: 'percentage' | 'fixed';
-  discountValue: number;
-  maxDiscount?: number;
-  minOrderAmount?: number;
-  valid: boolean;
-  message?: string;
+export interface OrderQuoteBreakdown {
+  baseFee: number;
+  distanceKm: number;
+  distanceCharge: number;
+  peakMultiplier: number;
+  peakAmount: number;
+  deliveryFee: number;
+  serviceFeePct: number;
+  smallOrderApplied: boolean;
+}
+
+export interface OrderQuote {
+  subtotal: number;
+  deliveryFee: number;
+  serviceFee: number;
+  smallOrderFee: number;
+  discount: number;
+  loyaltyDiscount: number;
+  total: number;
+  distanceKm: number;
+  estimatedDeliveryMinutes: number;
+  breakdown: OrderQuoteBreakdown;
+  driverPayout: number;
+  addressRequired: boolean;
 }

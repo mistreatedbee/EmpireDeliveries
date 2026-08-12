@@ -43,7 +43,7 @@ export function About() {
           <div className="relative">
             <div className="overflow-hidden rounded-3xl border border-border">
               <Image
-                src="/images/community.png"
+                src="/images/community.svg"
                 alt="A local business owner using Empire Deliveries to reach more customers"
                 width={720}
                 height={720}

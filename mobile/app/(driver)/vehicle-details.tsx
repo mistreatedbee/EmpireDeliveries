@@ -20,6 +20,7 @@ import {
 import { driverService } from '@/services/driver.service';
 import { useUIStore } from '@/stores/uiStore';
 import { T, Fonts, Radius } from '@/constants/colors';
+import { getUserErrorMessage } from '@/utils/errorHandler';
 
 type VehicleType = 'Bicycle' | 'Motorbike' | 'Car' | 'Bakkie';
 
@@ -119,8 +120,8 @@ export default function VehicleDetails() {
       showToast('Vehicle details saved successfully.', 'success');
       router.back();
     },
-    onError: (err: any) => {
-      showToast(err?.message ?? 'Could not save vehicle details. Please try again.', 'error');
+    onError: (err) => {
+      showToast(getUserErrorMessage(err, 'Could not save vehicle details. Please try again.'), 'error');
     },
   });
 

@@ -7,7 +7,16 @@ import { Button } from "@/components/ui/button"
 import { adminApi, type Application } from "@/lib/adminApi"
 
 const statusTabs = ["pending", "approved", "rejected"] as const
-const typeTabs = ["driver", "restaurant"] as const
+const typeTabs = ["all", "driver", "restaurant"] as const
+
+function DocLink({ label, url }: { label: string; url?: string }) {
+  if (!url) return null
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary underline">
+      {label}
+    </a>
+  )
+}
 
 function ApplicationDetail({ app }: { app: Application }) {
   const fields: Array<[string, string | number | undefined]> =
@@ -46,13 +55,21 @@ function ApplicationDetail({ app }: { app: Application }) {
           <p className="text-foreground">{app.rejectionReason}</p>
         </div>
       )}
+      {(app.idDocumentUrl || app.driversLicenseUrl || app.vehicleRegistrationUrl || app.businessDocUrl) && (
+        <div className="col-span-full flex flex-wrap gap-3 pt-2">
+          <DocLink label="ID document" url={app.idDocumentUrl} />
+          <DocLink label="Driver's license" url={app.driversLicenseUrl} />
+          <DocLink label="Vehicle registration" url={app.vehicleRegistrationUrl} />
+          <DocLink label="Business document" url={app.businessDocUrl} />
+        </div>
+      )}
     </div>
   )
 }
 
 export default function ApplicationsPage() {
   const [status, setStatus] = useState<(typeof statusTabs)[number]>("pending")
-  const [type, setType] = useState<(typeof typeTabs)[number]>("driver")
+  const [type, setType] = useState<(typeof typeTabs)[number]>("all")
   const [expanded, setExpanded] = useState<string | null>(null)
   const [rejectingId, setRejectingId] = useState<string | null>(null)
   const [reason, setReason] = useState("")
@@ -64,12 +81,14 @@ export default function ApplicationsPage() {
   })
 
   const approve = useMutation({
-    mutationFn: (id: string) => adminApi.approveApplication(id, type),
+    mutationFn: ({ id, applicationType }: { id: string; applicationType: "driver" | "restaurant" }) =>
+      adminApi.approveApplication(id, applicationType),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-applications"] }),
   })
 
   const reject = useMutation({
-    mutationFn: ({ id, reason }: { id: string; reason?: string }) => adminApi.rejectApplication(id, type, reason),
+    mutationFn: ({ id, applicationType, reason }: { id: string; applicationType: "driver" | "restaurant"; reason?: string }) =>
+      adminApi.rejectApplication(id, applicationType, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-applications"] })
       setRejectingId(null)
@@ -122,16 +141,19 @@ export default function ApplicationsPage() {
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {app.email} · {app.phone}
+                  {app.incompleteSignup ? " · Incomplete signup" : ""}
                 </p>
               </div>
-              <p className="text-xs text-muted-foreground">{new Date(app.submittedAt).toLocaleDateString()}</p>
+              <p className="text-xs text-muted-foreground">
+                {app.submittedAt ? new Date(app.submittedAt).toLocaleDateString() : "Not submitted"}
+              </p>
             </button>
 
             {expanded === app.id && <ApplicationDetail app={app} />}
 
-            {status === "pending" && (
+            {status === "pending" && !app.incompleteSignup && (
               <div className="mt-3 flex gap-2 border-t border-border pt-3">
-                <Button size="sm" onClick={() => approve.mutate(app.id)} disabled={approve.isPending}>
+                <Button size="sm" onClick={() => approve.mutate({ id: app.id, applicationType: app.applicationType })} disabled={approve.isPending}>
                   Approve
                 </Button>
                 <Button size="sm" variant="destructive" onClick={() => setRejectingId(rejectingId === app.id ? null : app.id)}>
@@ -148,7 +170,7 @@ export default function ApplicationsPage() {
                   placeholder="Reason (optional)"
                   className="flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground outline-none focus:border-ring"
                 />
-                <Button size="sm" variant="destructive" onClick={() => reject.mutate({ id: app.id, reason })} disabled={reject.isPending}>
+                <Button size="sm" variant="destructive" onClick={() => reject.mutate({ id: app.id, applicationType: app.applicationType, reason })} disabled={reject.isPending}>
                   Confirm reject
                 </Button>
               </div>

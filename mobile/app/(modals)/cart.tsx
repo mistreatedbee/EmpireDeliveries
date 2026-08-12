@@ -1,16 +1,23 @@
 import React, { useState } from 'react';
-import { View, Text, FlatList, Pressable, Image, TextInput, ScrollView } from 'react-native';
+import { View, Text, Pressable, Image, TextInput, ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useMutation } from '@tanstack/react-query';
 import { Tag, X, CheckCircle, ShoppingCart } from 'lucide-react-native';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { Button, EmptyState } from '@/components/empire';
 import { useCartStore } from '@/stores/cartStore';
+import { useLocationStore } from '@/stores/locationStore';
 import { useUIStore } from '@/stores/uiStore';
 import { orderService } from '@/services/order.service';
+import { useOrderQuote } from '@/hooks/useOrderQuote';
+import { OrderQuoteSummary } from '@/components/order/OrderQuoteSummary';
 import { CartItem } from '@/types/order.types';
 import { T } from '@/constants/colors';
 import { formatPrice } from '@/utils/formatters';
+import { getUserErrorMessage } from '@/utils/errorHandler';
+import { getDeliveryCoordinates } from '@/utils/locationHelpers';
+import { hasValidCoordinates } from '@/utils/distance';
 
 function CartItemRow({ item }: { item: CartItem }) {
   const { updateQuantity, removeItem } = useCartStore();
@@ -44,13 +51,32 @@ function CartItemRow({ item }: { item: CartItem }) {
 }
 
 export default function CartScreen() {
-  const { items, restaurantName, subtotal, discount, total, coupon, applyCoupon, clearCoupon, itemCount } = useCartStore();
+  const insets = useSafeAreaInsets();
+  const footerPad = insets.bottom + 20;
+  const { items, restaurantId, restaurantName, restaurantLatitude, restaurantLongitude, discount, coupon, applyCoupon, clearCoupon, itemCount } = useCartStore();
+  const { selectedAddress, currentLocation } = useLocationStore();
   const { showToast } = useUIStore();
   const [couponCode, setCouponCode] = useState('');
 
-  const deliveryFee = subtotal > 0 ? 35 : 0;
-  const serviceFee = subtotal > 0 ? Math.round(subtotal * 0.05 * 100) / 100 : 0;
-  const grandTotal = total + deliveryFee + serviceFee;
+  const deliveryCoordinates = getDeliveryCoordinates(selectedAddress, currentLocation);
+  const restaurantCoordinates =
+    restaurantLatitude != null &&
+    restaurantLongitude != null &&
+    hasValidCoordinates({ latitude: restaurantLatitude, longitude: restaurantLongitude })
+      ? { latitude: restaurantLatitude, longitude: restaurantLongitude }
+      : null;
+
+  const { displayQuote, displayTotal, isEstimate } = useOrderQuote({
+    restaurantId,
+    items,
+    deliveryAddressId: selectedAddress?.id,
+    deliveryCoordinates,
+    restaurantCoordinates,
+    couponCode: coupon?.valid ? coupon.code : undefined,
+    cartDiscount: discount,
+  });
+
+  const grandTotal = displayTotal;
 
   const validateCoupon = useMutation({
     mutationFn: () => orderService.validateCoupon(couponCode.trim().toUpperCase()),
@@ -59,10 +85,10 @@ export default function CartScreen() {
         applyCoupon(data);
         showToast(`Coupon applied! You save ${formatPrice(discount)}`, 'success');
       } else {
-        showToast(data.message ?? 'Invalid coupon code', 'error');
+        showToast(getUserErrorMessage(data.message, 'This coupon code is not valid.'), 'error');
       }
     },
-    onError: () => showToast('Could not validate coupon. Please try again.', 'error'),
+    onError: (error) => showToast(getUserErrorMessage(error, 'Could not validate coupon. Please try again.'), 'error'),
   });
 
   if (items.length === 0) {
@@ -89,7 +115,7 @@ export default function CartScreen() {
   }
 
   return (
-    <ScreenWrapper bg="white" edges={['bottom']}>
+    <ScreenWrapper bg="white">
       {/* Header */}
       <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16, backgroundColor: T.bg, borderBottomWidth: 1, borderBottomColor: T.border }}>
         <Pressable onPress={() => router.back()} style={{ marginRight: 12, padding: 4 }}>
@@ -97,18 +123,19 @@ export default function CartScreen() {
         </Pressable>
         <View>
           <Text style={{ fontSize: 20, fontWeight: '900', color: T.text }}>Your Cart</Text>
-          <Text style={{ fontSize: 13, color: T.textSec }}>{restaurantName} · {itemCount} items</Text>
+          <Text style={{ fontSize: 13, color: T.textSec }}>{restaurantName ?? 'Restaurant'} · {itemCount} items</Text>
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 16 }}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={{ backgroundColor: T.bg, paddingHorizontal: 20 }}>
-          <FlatList
-            data={items}
-            keyExtractor={(i) => i.id}
-            renderItem={({ item }) => <CartItemRow item={item} />}
-            scrollEnabled={false}
-          />
+          {items.map((item) => (
+            <CartItemRow key={item.id} item={item} />
+          ))}
         </View>
 
         {/* Coupon */}
@@ -156,34 +183,32 @@ export default function CartScreen() {
         {/* Order Summary */}
         <View style={{ marginHorizontal: 16, backgroundColor: T.bg, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: T.border }}>
           <Text style={{ fontWeight: '800', fontSize: 15, color: T.text, marginBottom: 12 }}>Order Summary</Text>
-          {[
-            { label: 'Subtotal', value: subtotal },
-            { label: 'Delivery fee', value: deliveryFee },
-            { label: 'Service fee', value: serviceFee },
-          ].map(({ label, value }) => (
-            <View key={label} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-              <Text style={{ color: T.textSec }}>{label}</Text>
-              <Text style={{ fontWeight: '600', color: T.text }}>{formatPrice(value)}</Text>
-            </View>
-          ))}
-          {discount > 0 && (
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-              <Text style={{ color: T.success }}>Discount</Text>
-              <Text style={{ color: T.success, fontWeight: '600' }}>−{formatPrice(discount)}</Text>
-            </View>
-          )}
-          <View style={{ height: 1, backgroundColor: T.border, marginVertical: 12 }} />
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <Text style={{ fontWeight: '900', fontSize: 17, color: T.text }}>Total</Text>
-            <Text style={{ fontWeight: '900', fontSize: 17, color: T.text }}>{formatPrice(grandTotal)}</Text>
-          </View>
+          <OrderQuoteSummary
+            quote={displayQuote}
+            itemCount={itemCount}
+            isEstimate={isEstimate}
+          />
         </View>
       </ScrollView>
 
-      {/* Checkout CTA */}
-      <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: T.bg, padding: 20, borderTopWidth: 1, borderTopColor: T.border }}>
-        <Button size="lg" onPress={() => router.push('/(modals)/checkout')}>
-          Proceed to Checkout — {formatPrice(grandTotal)}
+      {/* Checkout CTA — pinned footer (not absolute, so it stays visible above home indicator) */}
+      <View
+        style={{
+          backgroundColor: T.bg,
+          paddingTop: 16,
+          paddingHorizontal: 20,
+          paddingBottom: footerPad,
+          borderTopWidth: 1,
+          borderTopColor: T.border,
+        }}
+      >
+        <Button
+          size="lg"
+          fullWidth
+          style={{ width: '100%', minHeight: 52 }}
+          onPress={() => router.push('/(modals)/checkout')}
+        >
+          {`Proceed to Checkout — ${formatPrice(grandTotal)}`}
         </Button>
       </View>
     </ScreenWrapper>

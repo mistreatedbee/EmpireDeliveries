@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ScrollView, View, Text, Pressable, RefreshControl } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import { MapPin, ChevronDown, Bell, Search } from 'lucide-react-native';
@@ -10,16 +11,21 @@ import { CategoryRow } from '@/components/home/CategoryRow';
 import { RestaurantCard } from '@/components/home/RestaurantCard';
 import { SectionHeader } from '@/components/home/SectionHeader';
 import { SkeletonCard } from '@/components/ui/Skeleton';
+import { QueryErrorState } from '@/components/empire';
 import { useAuthStore } from '@/stores/authStore';
 import { useLocationStore } from '@/stores/locationStore';
 import { useNotificationStore } from '@/stores/notificationStore';
 import { useCartStore } from '@/stores/cartStore';
 import { useFeaturedRestaurants, usePopularRestaurants, useCategories } from '@/hooks/useRestaurants';
+import { useOrderQuote } from '@/hooks/useOrderQuote';
+import { getDeliveryCoordinates } from '@/utils/locationHelpers';
+import { hasValidCoordinates } from '@/utils/distance';
 import { T } from '@/constants/colors';
 import { formatPrice } from '@/utils/formatters';
 import { Restaurant } from '@/types/restaurant.types';
 
 export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
   const { selectedAddress, currentLocation, permissionStatus, setCurrentLocation } = useLocationStore();
 
   // Silently re-fetch GPS coords if they were lost after app restart
@@ -31,21 +37,37 @@ export default function HomeScreen() {
     }
   }, []);
   const { unreadCount } = useNotificationStore();
-  const { itemCount, subtotal } = useCartStore();
+  const { itemCount, items, restaurantId, restaurantLatitude, restaurantLongitude, coupon } = useCartStore();
   const [activeCategory, setActiveCategory] = useState('');
 
-  const { data: featured, isLoading: loadingFeatured, refetch: refetchFeatured } = useFeaturedRestaurants();
-  const { data: popular, isLoading: loadingPopular } = usePopularRestaurants();
-  const { data: categories } = useCategories();
+  const { data: featured, isLoading: loadingFeatured, isError: featuredError, refetch: refetchFeatured } = useFeaturedRestaurants();
+  const { data: popular, isLoading: loadingPopular, isError: popularError, refetch: refetchPopular } = usePopularRestaurants();
+  const { data: categories, refetch: refetchCategories } = useCategories();
 
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = async () => {
     setRefreshing(true);
-    await refetchFeatured();
+    await Promise.all([refetchFeatured(), refetchPopular(), refetchCategories()]);
     setRefreshing(false);
   };
 
-  const cartTotal = subtotal + 35 + Math.round(subtotal * 0.05 * 100) / 100;
+  const deliveryCoordinates = getDeliveryCoordinates(selectedAddress, currentLocation);
+  const restaurantCoordinates =
+    restaurantLatitude != null &&
+    restaurantLongitude != null &&
+    hasValidCoordinates({ latitude: restaurantLatitude, longitude: restaurantLongitude })
+      ? { latitude: restaurantLatitude, longitude: restaurantLongitude }
+      : null;
+
+  const { displayTotal: cartTotal } = useOrderQuote({
+    restaurantId,
+    items,
+    deliveryAddressId: selectedAddress?.id,
+    deliveryCoordinates,
+    restaurantCoordinates,
+    couponCode: coupon?.valid ? coupon.code : undefined,
+    enabled: itemCount > 0,
+  });
 
   return (
     <ScreenWrapper bg="white" edges={['top', 'left', 'right']}>
@@ -83,7 +105,7 @@ export default function HomeScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: itemCount > 0 ? 96 : 32 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: itemCount > 0 ? 96 + insets.bottom : 32 + insets.bottom }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={T.action} />}
       >
         <SectionHeader title="Quick Services" />
@@ -100,13 +122,21 @@ export default function HomeScreen() {
         )}
 
         <SectionHeader title="Featured" onSeeAll={() => router.push('/(customer)/(home)/restaurant-list')} />
-        {loadingFeatured
-          ? [0, 1, 2].map((i) => <SkeletonCard key={i} />)
-          : featured?.map((r: Restaurant) => <RestaurantCard key={r.id} restaurant={r} />)}
+        {featuredError ? (
+          <QueryErrorState message="Could not load featured restaurants." onRetry={() => refetchFeatured()} />
+        ) : loadingFeatured ? (
+          [0, 1, 2].map((i) => <SkeletonCard key={i} />)
+        ) : (
+          featured?.map((r: Restaurant) => <RestaurantCard key={r.id} restaurant={r} />)
+        )}
 
         <SectionHeader title="Popular near you" onSeeAll={() => router.push({ pathname: '/(customer)/(home)/restaurant-list', params: { sort: 'popular' } })} />
-        {loadingPopular ? (
-          <View style={{ height: 180 }} />
+        {popularError ? (
+          <QueryErrorState message="Could not load popular restaurants." onRetry={() => refetchPopular()} />
+        ) : loadingPopular ? (
+          [0, 1, 2].map((i) => <SkeletonCard key={i} wide />)
+        ) : (popular ?? []).length === 0 ? (
+          <Text style={{ color: T.textSec, fontSize: 14, paddingVertical: 16 }}>No restaurants nearby yet.</Text>
         ) : (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingRight: 4 }}>
             {(popular ?? []).map((r: Restaurant) => <RestaurantCard key={r.id} restaurant={r} wide />)}
@@ -118,7 +148,7 @@ export default function HomeScreen() {
       {itemCount > 0 && (
         <Pressable
           onPress={() => router.push('/(modals)/cart')}
-          style={{ position: 'absolute', bottom: 24, left: 16, right: 16, backgroundColor: T.action, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+          style={{ position: 'absolute', bottom: 16 + insets.bottom, left: 16, right: 16, backgroundColor: T.action, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
         >
           <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 8, width: 28, height: 28, alignItems: 'center', justifyContent: 'center' }}>
             <Text style={{ color: '#FFF', fontWeight: '800', fontSize: 13 }}>{itemCount}</Text>

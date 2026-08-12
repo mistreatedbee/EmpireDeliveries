@@ -1,10 +1,12 @@
-import { Tabs, router } from 'expo-router';
-import React, { useEffect } from 'react';
-import { View, Text } from 'react-native';
+import React from 'react';
+import { View, Text, ActivityIndicator } from 'react-native';
+import { Tabs } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, ShoppingBag, Bell, User } from 'lucide-react-native';
-import { useAuthStore } from '@/stores/authStore';
 import { useNotificationStore } from '@/stores/notificationStore';
+import { useAuthGate } from '@/hooks/useAuthGate';
 import { T } from '@/constants/colors';
+import { tabBarStyle } from '@/utils/tabBar';
 
 function TabIcon({
   Icon,
@@ -35,25 +37,31 @@ function TabIcon({
 }
 
 export default function CustomerLayout() {
-  const { isAuthenticated } = useAuthStore();
+  const insets = useSafeAreaInsets();
   const { unreadCount } = useNotificationStore();
+  const { allowed, isLoading, isAuthenticated } = useAuthGate();
 
-  useEffect(() => {
-    if (!isAuthenticated) router.replace('/(auth)/login');
-  }, [isAuthenticated]);
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: T.bg, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator size="large" color={T.action} />
+      </View>
+    );
+  }
+
+  if (!isAuthenticated || !allowed) {
+    return (
+      <View style={{ flex: 1, backgroundColor: T.bg, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator size="large" color={T.action} />
+      </View>
+    );
+  }
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: {
-          backgroundColor: T.bg,
-          borderTopColor: T.border,
-          borderTopWidth: 1,
-          height: 72,
-          paddingBottom: 12,
-          paddingTop: 8,
-        },
+        tabBarStyle: tabBarStyle(insets, { backgroundColor: T.bg, borderColor: T.border }),
         tabBarActiveTintColor: T.action,
         tabBarInactiveTintColor: T.textTer,
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },

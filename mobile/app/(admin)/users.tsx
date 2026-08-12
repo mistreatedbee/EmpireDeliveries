@@ -7,6 +7,7 @@ import { Button, Input, Badge, SkeletonList, EmptyState } from '@/components/emp
 import type { BadgeVariant } from '@/components/empire';
 import { useUIStore } from '@/stores/uiStore';
 import { Colors } from '@/constants/colors';
+import { getUserErrorMessage } from '@/utils/errorHandler';
 
 const ROLES = ['all', 'customer', 'driver', 'restaurant', 'admin'];
 
@@ -114,7 +115,7 @@ export default function UsersScreen() {
       setPendingSuspendId(null);
       setSuspendReason('');
     },
-    onError: (err: any) => showToast(err.message || 'Failed to suspend user', 'error'),
+    onError: (err) => showToast(getUserErrorMessage(err, 'Failed to suspend user. Please try again.'), 'error'),
   });
 
   const reactivateMutation = useMutation({
@@ -123,7 +124,7 @@ export default function UsersScreen() {
       queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
       showToast('User reactivated successfully', 'success');
     },
-    onError: (err: any) => showToast(err.message || 'Failed to reactivate user', 'error'),
+    onError: (err) => showToast(getUserErrorMessage(err, 'Failed to reactivate user. Please try again.'), 'error'),
   });
 
   const handleSuspend = (user: AdminUser) => {

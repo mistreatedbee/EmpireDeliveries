@@ -8,7 +8,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 import { isValidEmail, isValidSAPhone, normalizeSAPhone } from '@/utils/validators';
 import { T, Fonts } from '@/constants/colors';
-import { AppError } from '@/types/api.types';
+import { getUserErrorMessage } from '@/utils/errorHandler';
 
 const CUISINES = [
   'South African',
@@ -124,15 +124,16 @@ export default function RestaurantStep1() {
           ...businessParams(),
         },
       });
-    } catch (error: any) {
-      const appError = error as AppError;
-      if (appError.message === 'User already exists') {
+    } catch (error) {
+      const appError = error as { code?: string; field?: string };
+      const existsCodes = ['AUTH_EMAIL_ALREADY_EXISTS', 'AUTH_USER_ALREADY_EXISTS'];
+      if (existsCodes.includes(appError.code ?? '')) {
         showToast('An account with this email already exists. Please log in instead.', 'error');
         router.push('/(auth)/login');
       } else if (appError.field) {
-        setErrors((e) => ({ ...e, [appError.field!]: appError.message }));
+        setErrors((e) => ({ ...e, [appError.field!]: getUserErrorMessage(error) }));
       } else {
-        showToast(appError.message ?? 'Something went wrong', 'error');
+        showToast(getUserErrorMessage(error), 'error');
       }
     } finally {
       setLoading(false);

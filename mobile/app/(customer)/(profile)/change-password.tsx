@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { userService } from '@/services/user.service';
 import { useUIStore } from '@/stores/uiStore';
 import { T } from '@/constants/colors';
+import { getUserErrorMessage } from '@/utils/errorHandler';
 
 export default function ChangePasswordScreen() {
   const { showToast } = useUIStore();
@@ -31,9 +32,7 @@ export default function ChangePasswordScreen() {
       router.back();
     },
     onError: (err: unknown) => {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        'Failed to change password';
+      const msg = getUserErrorMessage(err, 'Failed to change password. Please try again.');
       setError(msg);
       showToast(msg, 'error');
     },

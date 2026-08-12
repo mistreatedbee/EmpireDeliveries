@@ -1,12 +1,22 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert, Modal } from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert, Modal, TextInput, Linking } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle, XCircle, ChevronRight, Car, Building2, CreditCard, X } from 'lucide-react-native';
 import { adminService, Application } from '@/services/admin.service';
 import { Colors } from '@/constants/colors';
+import { getUserErrorMessage } from '@/utils/errorHandler';
 
 const TABS: Array<'pending' | 'approved' | 'rejected'> = ['pending', 'approved', 'rejected'];
 const TAB_COLORS = { pending: '#f97316', approved: '#4ade80', rejected: '#ef4444' };
+
+function DocLink({ label, url }: { label: string; url?: string }) {
+  if (!url) return null;
+  return (
+    <Pressable onPress={() => Linking.openURL(url)} style={{ paddingVertical: 6 }}>
+      <Text style={{ color: Colors.gold[500], fontSize: 13, fontWeight: '600' }}>{label} ↗</Text>
+    </Pressable>
+  );
+}
 
 function DetailRow({ label, value }: { label: string; value?: string | number }) {
   if (!value) return null;
@@ -45,9 +55,22 @@ function ApplicationDetail({ app, onClose, onApprove, onReject, loading }: {
         <View style={{ backgroundColor: Colors.empire.charcoal, borderRadius: 14, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#2a2a2a' }}>
           <DetailRow label="Email" value={app.email} />
           <DetailRow label="Phone" value={app.phone} />
-          <DetailRow label="Submitted" value={new Date(app.submittedAt).toLocaleDateString('en-ZA')} />
+          <DetailRow label="Submitted" value={app.submittedAt ? new Date(app.submittedAt).toLocaleDateString('en-ZA') : 'Incomplete signup'} />
+          {app.incompleteSignup && <DetailRow label="Status" value="Application not submitted" />}
           {app.rejectionReason && <DetailRow label="Rejection Reason" value={app.rejectionReason} />}
         </View>
+
+        {(app.idDocumentUrl || app.driversLicenseUrl || app.vehicleRegistrationUrl || app.businessDocUrl) && (
+          <>
+            <Text style={{ color: Colors.gold[500], fontWeight: '800', fontSize: 11, letterSpacing: 1.5, marginBottom: 10, marginTop: 8 }}>DOCUMENTS</Text>
+            <View style={{ backgroundColor: Colors.empire.charcoal, borderRadius: 14, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#2a2a2a' }}>
+              <DocLink label="ID document" url={app.idDocumentUrl} />
+              <DocLink label="Driver's license" url={app.driversLicenseUrl} />
+              <DocLink label="Vehicle registration" url={app.vehicleRegistrationUrl} />
+              <DocLink label="Business document" url={app.businessDocUrl} />
+            </View>
+          </>
+        )}
 
         {app.applicationType === 'driver' && (
           <>
@@ -84,7 +107,7 @@ function ApplicationDetail({ app, onClose, onApprove, onReject, loading }: {
           <DetailRow label="Holder" value={app.bankHolder} />
         </View>
 
-        {app.status === 'pending' && (
+        {app.status === 'pending' && !app.incompleteSignup && (
           <View style={{ flexDirection: 'row', gap: 12 }}>
             <Pressable
               onPress={onApprove}
@@ -112,6 +135,8 @@ function ApplicationDetail({ app, onClose, onApprove, onReject, loading }: {
 export default function ApplicationsScreen() {
   const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected'>('pending');
   const [selected, setSelected] = useState<Application | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<Application | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
   const queryClient = useQueryClient();
 
   const { data: applications, isLoading } = useQuery({
@@ -127,7 +152,7 @@ export default function ApplicationsScreen() {
       queryClient.invalidateQueries({ queryKey: ['admin'] });
       setSelected(null);
     },
-    onError: (err: any) => Alert.alert('Error', err.message || 'Approval failed'),
+    onError: (err) => Alert.alert('Could not approve', getUserErrorMessage(err, 'Approval failed. Please try again.')),
   });
 
   const rejectMutation = useMutation({
@@ -137,18 +162,19 @@ export default function ApplicationsScreen() {
       queryClient.invalidateQueries({ queryKey: ['admin'] });
       setSelected(null);
     },
-    onError: (err: any) => Alert.alert('Error', err.message || 'Rejection failed'),
+    onError: (err) => Alert.alert('Could not reject', getUserErrorMessage(err, 'Rejection failed. Please try again.')),
   });
 
   const handleReject = (app: Application) => {
-    Alert.prompt(
-      'Reject Application',
-      `Reason for rejecting ${app.firstName}'s application (optional):`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Reject', style: 'destructive', onPress: (reason?: string) => rejectMutation.mutate({ id: app.id, type: app.applicationType, reason }) },
-      ],
-      'plain-text',
+    setRejectTarget(app);
+    setRejectReason('');
+  };
+
+  const confirmReject = () => {
+    if (!rejectTarget) return;
+    rejectMutation.mutate(
+      { id: rejectTarget.id, type: rejectTarget.applicationType, reason: rejectReason || undefined },
+      { onSettled: () => setRejectTarget(null) },
     );
   };
 
@@ -170,6 +196,31 @@ export default function ApplicationsScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: Colors.empire.black }}>
+      <Modal visible={!!rejectTarget} transparent animationType="fade">
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', padding: 24 }}>
+          <View style={{ backgroundColor: Colors.empire.charcoal, borderRadius: 16, padding: 20, borderWidth: 1, borderColor: '#333' }}>
+            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 18, marginBottom: 8 }}>Reject application</Text>
+            <Text style={{ color: '#888', fontSize: 14, marginBottom: 12 }}>
+              Reason for rejecting {rejectTarget?.firstName}'s application (optional)
+            </Text>
+            <TextInput
+              value={rejectReason}
+              onChangeText={setRejectReason}
+              placeholder="Reason..."
+              placeholderTextColor="#666"
+              style={{ backgroundColor: '#111', borderRadius: 10, padding: 12, color: '#fff', marginBottom: 16, borderWidth: 1, borderColor: '#333' }}
+            />
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <Pressable onPress={() => setRejectTarget(null)} style={{ flex: 1, padding: 12, alignItems: 'center' }}>
+                <Text style={{ color: '#888', fontWeight: '700' }}>Cancel</Text>
+              </Pressable>
+              <Pressable onPress={confirmReject} style={{ flex: 1, padding: 12, alignItems: 'center', backgroundColor: '#ef444433', borderRadius: 10 }}>
+                <Text style={{ color: '#ef4444', fontWeight: '800' }}>Reject</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
       <View style={{ paddingTop: 56, paddingHorizontal: 24, paddingBottom: 0, borderBottomWidth: 1, borderBottomColor: Colors.empire.charcoal }}>
         <Text style={{ color: '#888', fontSize: 12, fontWeight: '700', letterSpacing: 2 }}>ADMIN PORTAL</Text>
         <Text style={{ color: '#fff', fontSize: 24, fontWeight: '900', marginTop: 2, marginBottom: 16 }}>Applications</Text>
@@ -212,10 +263,10 @@ export default function ApplicationsScreen() {
                 </View>
                 <Text style={{ color: '#888', fontSize: 12 }}>{app.email}</Text>
                 <Text style={{ color: '#555', fontSize: 11, marginTop: 2 }}>
-                  {new Date(app.submittedAt).toLocaleDateString('en-ZA')}
+                  {app.submittedAt ? new Date(app.submittedAt).toLocaleDateString('en-ZA') : 'Incomplete signup'}
                 </Text>
               </View>
-              {app.status === 'pending' && (
+              {app.status === 'pending' && !app.incompleteSignup && (
                 <View style={{ flexDirection: 'row', gap: 6, marginRight: 8 }}>
                   <Pressable
                     onPress={() => approveMutation.mutate({ id: app.id, type: app.applicationType })}

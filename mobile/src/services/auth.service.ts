@@ -28,14 +28,7 @@ const insforgeApi = axios.create({
 
 insforgeApi.interceptors.response.use(
   (res) => res,
-  (error) => {
-    const appError = parseApiError(error);
-    if (error instanceof AxiosError && error.response?.data?.error) {
-      appError.code = error.response.data.error;
-      appError.message = error.response.data.error;
-    }
-    return Promise.reject(appError);
-  }
+  (error) => Promise.reject(parseApiError(error)),
 );
 
 // Direct Express calls with explicit token (bypass the api interceptor during auth)
@@ -82,14 +75,28 @@ export const authService = {
   },
 
   async login({ email, password }: LoginPayload): Promise<AuthResponse> {
+    const normalizedEmail = (email ?? '').toLowerCase().trim();
     const res = await insforgeApi.post('/api/auth/sessions?client_type=mobile', {
-      email: (email ?? '').toLowerCase().trim(),
+      email: normalizedEmail,
       password,
     });
     const { accessToken, refreshToken } = res.data;
-    const user = await expressApi.get<never, User>('/auth/me', {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
+    const authHeaders = { Authorization: `Bearer ${accessToken}` };
+
+    let user: User;
+    try {
+      user = await expressApi.get<never, User>('/auth/me', { headers: authHeaders });
+    } catch (err) {
+      const appErr = err as { code?: string };
+      if (appErr.code === 'USER_NOT_FOUND') {
+        user = await authService._syncUser(accessToken, {
+          email: normalizedEmail,
+          phone: `ig${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`.slice(0, 20),
+        });
+      } else {
+        throw err;
+      }
+    }
     return { user, tokens: { accessToken, refreshToken } };
   },
 
@@ -103,8 +110,12 @@ export const authService = {
     return { message: 'Password reset successfully.' };
   },
 
-  async resendOtp({ email }: ResendOtpPayload): Promise<{ message: string }> {
-    await insforgeApi.post('/api/auth/email/send-verification', { email });
+  async resendOtp({ email, purpose }: ResendOtpPayload & { purpose?: 'registration' | 'password_reset' }): Promise<{ message: string }> {
+    if (purpose === 'password_reset') {
+      await insforgeApi.post('/api/auth/email/send-reset-password', { email: email.toLowerCase() });
+    } else {
+      await insforgeApi.post('/api/auth/email/send-verification', { email });
+    }
     return { message: 'Verification email sent.' };
   },
 

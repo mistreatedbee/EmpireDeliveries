@@ -4,10 +4,17 @@ import {
   CreateOrderPayload,
   TrackingUpdate,
   CouponValidation,
+  OrderQuote,
+  OrderQuotePayload,
 } from '@/types/order.types';
 import { ApiResponse, PaginatedResponse } from '@/types/api.types';
 
 export const orderService = {
+  async getQuote(payload: OrderQuotePayload): Promise<OrderQuote> {
+    const res = await api.post<never, ApiResponse<OrderQuote>>('/orders/quote', payload);
+    return res.data;
+  },
+
   async create(payload: CreateOrderPayload): Promise<Order> {
     const res = await api.post<never, ApiResponse<Order>>('/orders', payload);
     return res.data;
@@ -19,6 +26,13 @@ export const orderService = {
 
   async getById(id: string): Promise<Order> {
     const res = await api.get<never, ApiResponse<Order>>(`/orders/${id}`);
+    return res.data;
+  },
+
+  async getPaymentStatus(id: string): Promise<{ orderId: string; paymentStatus: string; status: string; paymentMethod?: string }> {
+    const res = await api.get<never, ApiResponse<{ orderId: string; paymentStatus: string; status: string; paymentMethod?: string }>>(
+      `/orders/${id}/payment-status`,
+    );
     return res.data;
   },
 

@@ -49,6 +49,24 @@ const textSizeClasses: Record<ButtonSize, string> = {
   lg: 'text-base',
 };
 
+const sizeHeights: Record<ButtonSize, number> = {
+  sm: 36,
+  md: 44,
+  lg: 52,
+};
+
+function flattenToLabel(children: React.ReactNode): string | null {
+  if (children == null || typeof children === 'boolean') return null;
+  if (typeof children === 'string' || typeof children === 'number') return String(children);
+  if (Array.isArray(children)) {
+    const parts = children
+      .map((child) => flattenToLabel(child))
+      .filter((part): part is string => part != null && part.length > 0);
+    return parts.length > 0 ? parts.join('') : null;
+  }
+  return null;
+}
+
 export function Button({
   variant = 'primary',
   size = 'md',
@@ -64,6 +82,7 @@ export function Button({
   ...props
 }: ButtonProps) {
   const isDisabled = disabled || loading;
+  const label = flattenToLabel(children);
 
   return (
     <TouchableOpacity
@@ -79,7 +98,11 @@ export function Button({
       ]
         .filter(Boolean)
         .join(' ')}
-      style={[variantContainerStyle[variant], style]}
+      style={[
+        variantContainerStyle[variant],
+        { minHeight: sizeHeights[size], width: fullWidth ? '100%' : undefined },
+        style,
+      ]}
       {...props}
     >
       {loading ? (
@@ -91,12 +114,12 @@ export function Button({
         leftIcon && <View className="mr-2">{leftIcon}</View>
       )}
 
-      {typeof children === 'string' ? (
+      {label != null ? (
         <Text
           className={textSizeClasses[size]}
           style={{ fontFamily: Fonts.bodySemibold, color: variantTextColor[variant] }}
         >
-          {children}
+          {label}
         </Text>
       ) : (
         children

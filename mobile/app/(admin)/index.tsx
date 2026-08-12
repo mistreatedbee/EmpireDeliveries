@@ -5,6 +5,7 @@ import { Users, Truck, Clock, ShoppingBag, CheckCircle, XCircle } from 'lucide-r
 import { adminService } from '@/services/admin.service';
 import { useAuthStore } from '@/stores/authStore';
 import { Colors } from '@/constants/colors';
+import { getUserErrorMessage } from '@/utils/errorHandler';
 
 function StatCard({ icon: Icon, label, value, color }: { icon: any; label: string; value: number | string; color: string }) {
   return (
@@ -38,7 +39,7 @@ export default function AdminDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin'] });
     },
-    onError: (err: any) => Alert.alert('Error', err.message || 'Approval failed'),
+    onError: (err) => Alert.alert('Could not approve', getUserErrorMessage(err, 'Approval failed. Please try again.')),
   });
 
   const rejectMutation = useMutation({
@@ -47,7 +48,7 @@ export default function AdminDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin'] });
     },
-    onError: (err: any) => Alert.alert('Error', err.message || 'Rejection failed'),
+    onError: (err) => Alert.alert('Could not reject', getUserErrorMessage(err, 'Rejection failed. Please try again.')),
   });
 
   const handleReject = (id: string, type: 'driver' | 'restaurant', name: string) => {

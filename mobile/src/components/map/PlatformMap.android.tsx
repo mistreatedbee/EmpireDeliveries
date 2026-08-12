@@ -1,30 +1,6 @@
 import React from 'react';
 import { type ViewStyle } from 'react-native';
-import { type Region } from 'react-native-maps';
-import {
-  Map as MapLibreMapView,
-  Camera as MapLibreCamera,
-  Marker as MapLibreMarker,
-} from '@maplibre/maplibre-react-native';
-
-// Android has no built-in (Google-free) map renderer, so it uses MapLibre with
-// raw OpenStreetMap raster tiles instead of react-native-maps' Google provider.
-const OSM_STYLE = {
-  version: 8 as const,
-  sources: {
-    osm: {
-      type: 'raster' as const,
-      tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-      tileSize: 256,
-      attribution: '© OpenStreetMap contributors',
-    },
-  },
-  layers: [{ id: 'osm', type: 'raster' as const, source: 'osm' }],
-};
-
-function zoomFromDelta(longitudeDelta: number): number {
-  return Math.log2(360 / longitudeDelta);
-}
+import RNMapView, { Marker as RNMarker, type Region } from 'react-native-maps';
 
 export interface PlatformMapMarker {
   id: string;
@@ -39,20 +15,15 @@ interface PlatformMapProps {
   markers: PlatformMapMarker[];
 }
 
+/** Use react-native-maps everywhere on Android — MapLibre native modules break Expo Go. */
 export function PlatformMap({ style, region, markers }: PlatformMapProps) {
   return (
-    <MapLibreMapView style={style} mapStyle={OSM_STYLE} attribution={false} logo={false}>
-      <MapLibreCamera
-        initialViewState={{
-          center: [region.longitude, region.latitude],
-          zoom: zoomFromDelta(region.longitudeDelta),
-        }}
-      />
+    <RNMapView style={style} initialRegion={region}>
       {markers.map((m) => (
-        <MapLibreMarker key={m.id} id={m.id} lngLat={[m.longitude, m.latitude]}>
+        <RNMarker key={m.id} coordinate={{ latitude: m.latitude, longitude: m.longitude }}>
           {m.children}
-        </MapLibreMarker>
+        </RNMarker>
       ))}
-    </MapLibreMapView>
+    </RNMapView>
   );
 }

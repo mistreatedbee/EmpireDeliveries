@@ -1,6 +1,7 @@
 import '../global.css';
 import { Slot } from 'expo-router';
 import React, { useEffect } from 'react';
+import { View, ActivityIndicator } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -20,11 +21,20 @@ import {
 import { queryClient } from '@/lib/queryClient';
 import { injectAuthStore } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
-import { setupNotificationListeners, registerForPushNotifications } from '@/lib/notifications';
 import { notificationService } from '@/services/notification.service';
 import Toast from '@/components/ui/Toast';
+import { ErrorBoundary } from '@/components/layout/ErrorBoundary';
+import { Colors } from '@/constants/colors';
 
 injectAuthStore(useAuthStore);
+
+function AuthBootstrap() {
+  const hydrate = useAuthStore((s) => s.hydrate);
+  useEffect(() => {
+    void hydrate();
+  }, [hydrate]);
+  return null;
+}
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -39,23 +49,34 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    const cleanup = setupNotificationListeners();
-    return cleanup;
-  }, []);
-
-  useEffect(() => {
-    registerForPushNotifications().then((token) => {
-      if (token) notificationService.registerToken(token).catch(() => null);
+    let cleanup = () => {};
+    void import('@/lib/notifications').then(({ setupNotificationListeners, registerForPushNotifications }) => {
+      cleanup = setupNotificationListeners();
+      registerForPushNotifications()
+        .then((token) => {
+          if (token) notificationService.registerToken(token).catch(() => null);
+        })
+        .catch(() => null);
     });
+    return () => cleanup();
   }, []);
 
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, backgroundColor: Colors.empire.black, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator size="large" color={Colors.gold[500]} />
+      </View>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaProvider>
-          <Slot />
+          <AuthBootstrap />
+          <ErrorBoundary>
+            <Slot />
+          </ErrorBoundary>
           <Toast />
         </SafeAreaProvider>
       </GestureHandlerRootView>

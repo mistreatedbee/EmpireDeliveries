@@ -1,5 +1,3 @@
-import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { router } from 'expo-router';
@@ -8,23 +6,27 @@ import { queryKeys } from '@/constants/queryKeys';
 import { useNotificationStore } from '@/stores/notificationStore';
 import { useUIStore } from '@/stores/uiStore';
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
+/** Android Expo Go (SDK 53+) removed remote push — skip loading the native module. */
+const PUSH_SUPPORTED = !(Platform.OS === 'android' && Constants.appOwnership === 'expo');
 
-// Never throws — push notifications are a nice-to-have, not something that
-// should be able to block login/signup navigation or crash the app on
-// launch. In particular, Android's FCM token fetch throws if
-// google-services.json / Firebase isn't configured for this project; that
-// must degrade to "no push token" rather than propagate to callers.
+type NotificationSub = { remove: () => void };
+let activeSubs: NotificationSub[] = [];
+
+async function loadNotifications() {
+  return import('expo-notifications');
+}
+
+// Never throws — push notifications are optional and must not block auth or startup.
 export async function registerForPushNotifications(): Promise<string | null> {
+  if (!PUSH_SUPPORTED) return null;
+
   try {
+    const [Notifications, Device, ConstantsMod] = await Promise.all([
+      loadNotifications(),
+      import('expo-device'),
+      import('expo-constants'),
+    ]);
+
     if (!Device.isDevice) return null;
 
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
@@ -46,7 +48,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
       });
     }
 
-    const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+    const projectId = ConstantsMod.default.expoConfig?.extra?.eas?.projectId;
     if (!projectId) return null;
 
     const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
@@ -58,32 +60,64 @@ export async function registerForPushNotifications(): Promise<string | null> {
 }
 
 export function setupNotificationListeners() {
-  const foregroundSub = Notifications.addNotificationReceivedListener((notification) => {
-    const data = notification.request.content.data as { type?: string; orderId?: string; conversationId?: string };
-    if (data?.type === 'order_update' && data.orderId) {
-      queryClient.invalidateQueries({ queryKey: queryKeys.orders.tracking(data.orderId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.orders.list() });
-    }
-    if (data?.type === 'new_message' && data.conversationId) {
-      queryClient.invalidateQueries({ queryKey: queryKeys.messages.thread(data.conversationId) });
-    }
-    useNotificationStore.getState().incrementUnread();
-    useUIStore.getState().showToast(notification.request.content.body ?? 'New notification', 'info');
-  });
+  if (!PUSH_SUPPORTED) return () => {};
 
-  const responseSub = Notifications.addNotificationResponseReceivedListener((response) => {
-    const data = response.notification.request.content.data as { orderId?: string; restaurantId?: string; type?: string; conversationId?: string };
-    if (data?.type === 'new_message' && data.conversationId) {
-      router.push({ pathname: '/(modals)/chat/[conversationId]', params: { conversationId: data.conversationId } });
-    } else if (data?.orderId) {
-      router.push(`/(customer)/(orders)/tracking/${data.orderId}`);
-    } else if (data?.restaurantId) {
-      router.push(`/(customer)/(home)/restaurant/${data.restaurantId}`);
-    }
-  });
+  void loadNotifications()
+    .then((Notifications) => {
+      Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowAlert: true,
+          shouldShowBanner: true,
+          shouldShowList: true,
+          shouldPlaySound: true,
+          shouldSetBadge: true,
+        }),
+      });
+
+      activeSubs.push(
+        Notifications.addNotificationReceivedListener((notification) => {
+          const data = notification.request.content.data as {
+            type?: string;
+            orderId?: string;
+            conversationId?: string;
+          };
+          if (data?.type === 'order_update' && data.orderId) {
+            queryClient.invalidateQueries({ queryKey: queryKeys.orders.tracking(data.orderId) });
+            queryClient.invalidateQueries({ queryKey: queryKeys.orders.list() });
+          }
+          if (data?.type === 'new_message' && data.conversationId) {
+            queryClient.invalidateQueries({ queryKey: queryKeys.messages.thread(data.conversationId) });
+          }
+          useNotificationStore.getState().incrementUnread();
+          useUIStore.getState().showToast(notification.request.content.body ?? 'New notification', 'info');
+        }),
+      );
+
+      activeSubs.push(
+        Notifications.addNotificationResponseReceivedListener((response) => {
+          const data = response.notification.request.content.data as {
+            orderId?: string;
+            restaurantId?: string;
+            type?: string;
+            conversationId?: string;
+          };
+          if (data?.type === 'new_message' && data.conversationId) {
+            router.push({
+              pathname: '/(modals)/chat/[conversationId]',
+              params: { conversationId: data.conversationId },
+            });
+          } else if (data?.orderId) {
+            router.push(`/(customer)/(orders)/tracking/${data.orderId}`);
+          } else if (data?.restaurantId) {
+            router.push(`/(customer)/(home)/restaurant/${data.restaurantId}`);
+          }
+        }),
+      );
+    })
+    .catch(() => null);
 
   return () => {
-    foregroundSub.remove();
-    responseSub.remove();
+    activeSubs.forEach((sub) => sub.remove());
+    activeSubs = [];
   };
 }

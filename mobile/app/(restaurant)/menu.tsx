@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, Pressable, ActivityIndicator, Switch, Alert, TextInput } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Pencil, Trash2, ChevronUp, ChevronDown, Check, X, FolderPlus } from 'lucide-react-native';
 import { restaurantManagementService, RestaurantMenuItem, RestaurantMenuCategory } from '@/services/restaurant-management.service';
 import { Colors } from '@/constants/colors';
+import { getUserErrorMessage } from '@/utils/errorHandler';
 
 export default function RestaurantMenu() {
+  const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const categories = useQuery({
     queryKey: ['restaurant', 'menu'],
@@ -53,7 +56,7 @@ export default function RestaurantMenu() {
   const deleteCategoryMutation = useMutation({
     mutationFn: restaurantManagementService.deleteCategory,
     onSuccess: invalidateMenu,
-    onError: (err: any) => Alert.alert('Error', err?.message ?? 'Could not delete category.'),
+    onError: (err) => Alert.alert('Could not delete category', getUserErrorMessage(err, 'Could not delete category. Please try again.')),
   });
 
   const reorderMutation = useMutation({
@@ -117,7 +120,22 @@ export default function RestaurantMenu() {
       {categories.isLoading ? (
         <ActivityIndicator color={Colors.gold[500]} style={{ marginTop: 40 }} />
       ) : (
-        <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 100 + insets.bottom }} showsVerticalScrollIndicator={false}>
+          {(categories.data ?? []).length === 0 && !addingCategory && (
+            <View style={{ alignItems: 'center', paddingVertical: 48 }}>
+              <Text style={{ fontWeight: '800', fontSize: 17, color: Colors.empire.black, marginBottom: 8 }}>No menu categories yet</Text>
+              <Text style={{ color: '#888', textAlign: 'center', marginBottom: 20, lineHeight: 20 }}>
+                Add a category first, then add menu items with photos.
+              </Text>
+              <Pressable
+                onPress={() => setAddingCategory(true)}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: Colors.gold[500], paddingVertical: 12, paddingHorizontal: 20, borderRadius: 14 }}
+              >
+                <FolderPlus size={18} color={Colors.empire.black} />
+                <Text style={{ color: Colors.empire.black, fontWeight: '800' }}>Add Category</Text>
+              </Pressable>
+            </View>
+          )}
           {addingCategory && (
             <View style={{ backgroundColor: '#fff', borderRadius: 14, padding: 12, marginBottom: 16, flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: Colors.gold[500] }}>
               <TextInput

@@ -22,6 +22,7 @@ import { driverService } from '@/services/driver.service';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 import { T, Fonts, Radius } from '@/constants/colors';
+import { getUserErrorMessage } from '@/utils/errorHandler';
 
 const BANK_OPTIONS = [
   { label: 'FNB', value: 'FNB' },
@@ -90,8 +91,8 @@ export default function BankAccount() {
       showToast('Bank account saved successfully.', 'success');
       router.back();
     },
-    onError: (err: any) => {
-      showToast(err?.message ?? 'Could not save bank account. Please try again.', 'error');
+    onError: (err) => {
+      showToast(getUserErrorMessage(err, 'Could not save bank account. Please try again.'), 'error');
     },
   });
 

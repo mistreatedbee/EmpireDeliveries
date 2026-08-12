@@ -1,7 +1,5 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Notifications from 'expo-notifications';
-import Constants from 'expo-constants';
 import { User } from '@/types/auth.types';
 import { storageService } from '@/services/storage.service';
 import { notificationService } from '@/services/notification.service';
@@ -13,15 +11,14 @@ let _pushToken: string | null = null;
 
 async function registerPushToken() {
   try {
-    const { status } = await Notifications.requestPermissionsAsync();
-    if (status !== 'granted') return;
-    const projectId =
-      (Constants.expoConfig?.extra?.eas?.projectId as string | undefined) ??
-      (Constants.easConfig?.projectId as string | undefined);
-    const token = (await Notifications.getExpoPushTokenAsync({ projectId: projectId ?? undefined })).data;
+    const { registerForPushNotifications } = await import('@/lib/notifications');
+    const token = await registerForPushNotifications();
+    if (!token) return;
     _pushToken = token;
     await notificationService.registerToken(token);
-  } catch { /* non-fatal */ }
+  } catch {
+    /* push is optional — must not block auth */
+  }
 }
 
 async function unregisterPushToken() {
@@ -57,7 +54,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     await storageService.setToken(token);
     if (refreshToken) await storageService.setRefreshToken(refreshToken);
     await AsyncStorage.setItem(USER_KEY, JSON.stringify(user));
-    set({ user, token, refreshToken: refreshToken ?? null, isAuthenticated: true });
+    set({ user, token, refreshToken: refreshToken ?? null, isAuthenticated: true, isLoading: false });
     setInsforgeSessionToken(token);
     void registerPushToken();
   },
@@ -90,13 +87,14 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   setLoading: (loading) => set({ isLoading: loading }),
 
   hydrate: async () => {
-    const [token, raw] = await Promise.all([
+    const [token, refreshToken, raw] = await Promise.all([
       storageService.getToken(),
+      storageService.getRefreshToken(),
       AsyncStorage.getItem(USER_KEY),
     ]);
     if (token) {
       const user = raw ? (JSON.parse(raw) as User) : null;
-      set({ token, user, isAuthenticated: true, isLoading: false });
+      set({ token, refreshToken, user, isAuthenticated: true, isLoading: false });
       setInsforgeSessionToken(token);
       void registerPushToken();
     } else {

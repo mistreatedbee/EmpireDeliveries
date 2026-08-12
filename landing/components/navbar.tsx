@@ -11,7 +11,7 @@ const links = [
   { label: "Services", href: "#services" },
   { label: "Community", href: "#community" },
   { label: "Businesses", href: "#audience" },
-  { label: "Drivers", href: "#audience" },
+  { label: "Drivers", href: "#download" },
   { label: "FAQ", href: "#faq" },
   { label: "Contact", href: "#contact" },
 ]

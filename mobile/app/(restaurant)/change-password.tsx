@@ -5,6 +5,7 @@ import { useMutation } from '@tanstack/react-query';
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react-native';
 import { userService } from '@/services/user.service';
 import { Colors } from '@/constants/colors';
+import { getUserErrorMessage } from '@/utils/errorHandler';
 
 export default function RestaurantChangePassword() {
   const [form, setForm] = useState({ current: '', next: '', confirm: '' });
@@ -23,8 +24,8 @@ export default function RestaurantChangePassword() {
       Alert.alert('Success', 'Password changed successfully.');
       router.back();
     },
-    onError: (err: { message?: string }) => {
-      const msg = err.message ?? 'Failed to change password.';
+    onError: (err) => {
+      const msg = getUserErrorMessage(err, 'Failed to change password. Please try again.');
       setError(msg);
     },
   });

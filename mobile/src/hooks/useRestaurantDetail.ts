@@ -2,18 +2,18 @@ import { useQuery } from '@tanstack/react-query';
 import { restaurantService } from '@/services/restaurant.service';
 import { queryKeys } from '@/constants/queryKeys';
 
-export function useRestaurantDetail(id: string) {
+export function useRestaurantDetail(id: string | undefined) {
   return useQuery({
-    queryKey: queryKeys.restaurants.detail(id),
-    queryFn: () => restaurantService.getById(id),
+    queryKey: queryKeys.restaurants.detail(id ?? ''),
+    queryFn: () => restaurantService.getById(id!),
     enabled: !!id,
   });
 }
 
-export function useMenuItems(restaurantId: string) {
+export function useMenuItems(restaurantId: string | undefined) {
   return useQuery({
-    queryKey: queryKeys.restaurants.menu(restaurantId),
-    queryFn: () => restaurantService.getMenu(restaurantId),
+    queryKey: queryKeys.restaurants.menu(restaurantId ?? ''),
+    queryFn: () => restaurantService.getMenu(restaurantId!),
     enabled: !!restaurantId,
   });
 }

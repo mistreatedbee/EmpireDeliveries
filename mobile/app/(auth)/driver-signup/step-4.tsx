@@ -16,6 +16,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 import { T, Fonts, Shadows } from '@/constants/colors';
 import { pickDocumentOrImage, uploadFile } from '@/utils/documentUpload';
+import { getUserErrorMessage } from '@/utils/errorHandler';
 
 function StepHeader({ current, total, title }: { current: number; total: number; title: string }) {
   return (
@@ -107,7 +108,7 @@ export default function DriverStep4() {
       });
     },
     onSuccess: () => router.replace('/(auth)/pending-approval'),
-    onError: (error: any) => showToast(error.message ?? 'Submission failed. Please try again.', 'error'),
+    onError: (error) => showToast(getUserErrorMessage(error, 'Submission failed. Please try again.'), 'error'),
   });
 
   const handleSubmit = () => {

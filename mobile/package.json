@@ -1,6 +1,6 @@
 {
   "name": "empire-deliveries-mobile",
-  "version": "1.0.0",
+  "version": "1.0.8",
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
@@ -11,6 +11,8 @@
     "prebuild:android:mobile": "npx expo prebuild --no-install --platform android",
     "fix:agp": "node ./scripts/fix-agp.js",
     "typecheck": "tsc --noEmit",
+    "build:android:internal": "eas build --platform android --profile internal --non-interactive",
+    "submit:android:internal": "eas submit --platform android --profile internal --latest",
     "eas-build-pre-build": "node ./scripts/diagnose-autolinking.js"
   },
   "dependencies": {

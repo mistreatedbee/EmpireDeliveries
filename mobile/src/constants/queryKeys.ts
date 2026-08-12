@@ -15,6 +15,7 @@ export const queryKeys = {
     list: (status?: string) => ['orders', 'list', status ?? 'all'] as const,
     detail: (id: string) => ['orders', 'detail', id] as const,
     tracking: (id: string) => ['orders', 'tracking', id] as const,
+    quote: (params: Record<string, unknown>) => ['orders', 'quote', params] as const,
   },
   user: {
     profile: ['user', 'profile'] as const,

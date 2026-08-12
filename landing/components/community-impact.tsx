@@ -63,7 +63,7 @@ export function CommunityImpact() {
           <Reveal direction="left">
             <div className="relative overflow-hidden rounded-3xl border border-white/10">
               <Image
-                src="/images/customer.png"
+                src="/images/customer.svg"
                 alt="A customer happily receiving an Empire Deliveries order at home"
                 width={720}
                 height={560}

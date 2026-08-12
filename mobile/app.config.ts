@@ -4,7 +4,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'Empire Deliveries',
   slug: 'empire-deliveries',
-  version: '1.0.0',
+  version: '1.0.8',
   orientation: 'portrait',
   icon: './assets/icon.png',
   userInterfaceStyle: 'automatic',
@@ -33,6 +33,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     associatedDomains: ['applinks:empiredeliveries.co.za'],
   },
   android: {
+    versionCode: 8,
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon.png',
       backgroundColor: '#0A0A0A',

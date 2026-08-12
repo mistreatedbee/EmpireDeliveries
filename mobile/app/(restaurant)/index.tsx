@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { TrendingUp, ShoppingBag, Clock, CheckCircle } from 'lucide-react-native';
 import { useAuthStore } from '@/stores/authStore';
 import { restaurantManagementService, RestaurantOrder } from '@/services/restaurant-management.service';
+import { QueryErrorState } from '@/components/empire';
 import { BarChart } from '@/components/ui/BarChart';
 import { Colors } from '@/constants/colors';
 
@@ -21,7 +22,7 @@ export default function RestaurantDashboard() {
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['restaurant', 'profile'] }),
   });
 
-  const { data: stats, isLoading: statsLoading } = useQuery({
+  const { data: stats, isLoading: statsLoading, isError: statsError, refetch: refetchStats } = useQuery({
     queryKey: ['restaurant', 'stats'],
     queryFn: restaurantManagementService.getStats,
     refetchInterval: 30000,
@@ -79,7 +80,9 @@ export default function RestaurantDashboard() {
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
         {/* Stats */}
         <View style={{ flexDirection: 'row', gap: 12, marginBottom: 20 }}>
-          {statsLoading ? (
+          {statsError ? (
+            <QueryErrorState message="Could not load restaurant stats." onRetry={() => refetchStats()} />
+          ) : statsLoading ? (
             <View style={{ flex: 1, alignItems: 'center' }}><ActivityIndicator color={Colors.gold[500]} /></View>
           ) : (
             [

@@ -8,6 +8,8 @@ interface CartStore {
   items: CartItem[];
   restaurantId: string | null;
   restaurantName: string | null;
+  restaurantLatitude: number | null;
+  restaurantLongitude: number | null;
   coupon: CouponValidation | null;
   loyaltyPointsToRedeem: number;
   // Computed
@@ -22,6 +24,7 @@ interface CartStore {
   applyCoupon: (coupon: CouponValidation) => void;
   clearCoupon: () => void;
   setLoyaltyPoints: (pts: number) => void;
+  setRestaurantLocation: (latitude: number, longitude: number) => void;
   clearCart: () => void;
   clearForNewRestaurant: (restaurantId: string, restaurantName: string) => void;
 }
@@ -56,6 +59,8 @@ export const useCartStore = create<CartStore>()(
       items: [],
       restaurantId: null,
       restaurantName: null,
+      restaurantLatitude: null,
+      restaurantLongitude: null,
       coupon: null,
       loyaltyPointsToRedeem: 0,
       itemCount: 0,
@@ -86,6 +91,8 @@ export const useCartStore = create<CartStore>()(
           items,
           restaurantId: items.length === 0 ? null : state.restaurantId,
           restaurantName: items.length === 0 ? null : state.restaurantName,
+          restaurantLatitude: items.length === 0 ? null : state.restaurantLatitude,
+          restaurantLongitude: items.length === 0 ? null : state.restaurantLongitude,
           itemCount: items.reduce((n, i) => n + i.quantity, 0),
           subtotal,
           discount,
@@ -119,10 +126,38 @@ export const useCartStore = create<CartStore>()(
 
       setLoyaltyPoints: (pts) => set({ loyaltyPointsToRedeem: Math.max(0, pts) }),
 
-      clearCart: () => set({ items: [], restaurantId: null, restaurantName: null, coupon: null, loyaltyPointsToRedeem: 0, itemCount: 0, subtotal: 0, discount: 0, total: 0 }),
+      setRestaurantLocation: (latitude, longitude) =>
+        set({ restaurantLatitude: latitude, restaurantLongitude: longitude }),
+
+      clearCart: () =>
+        set({
+          items: [],
+          restaurantId: null,
+          restaurantName: null,
+          restaurantLatitude: null,
+          restaurantLongitude: null,
+          coupon: null,
+          loyaltyPointsToRedeem: 0,
+          itemCount: 0,
+          subtotal: 0,
+          discount: 0,
+          total: 0,
+        }),
 
       clearForNewRestaurant: (restaurantId, restaurantName) => {
-        set({ items: [], restaurantId, restaurantName, coupon: null, loyaltyPointsToRedeem: 0, itemCount: 0, subtotal: 0, discount: 0, total: 0 });
+        set({
+          items: [],
+          restaurantId,
+          restaurantName,
+          restaurantLatitude: null,
+          restaurantLongitude: null,
+          coupon: null,
+          loyaltyPointsToRedeem: 0,
+          itemCount: 0,
+          subtotal: 0,
+          discount: 0,
+          total: 0,
+        });
       },
     }),
     {

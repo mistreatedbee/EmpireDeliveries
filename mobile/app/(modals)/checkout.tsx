@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, Pressable, TextInput } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { MapPin, CreditCard, Building2, Layers, Wallet, Banknote, ChevronRight, Award } from 'lucide-react-native';
+import { MapPin, CreditCard, Wallet, Banknote, ChevronRight, Award, AlertCircle } from 'lucide-react-native';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { Button } from '@/components/empire';
 import { useCartStore } from '@/stores/cartStore';
@@ -10,27 +11,55 @@ import { useLocationStore } from '@/stores/locationStore';
 import { useOrderStore } from '@/stores/orderStore';
 import { useUIStore } from '@/stores/uiStore';
 import { orderService } from '@/services/order.service';
+import { useOrderQuote } from '@/hooks/useOrderQuote';
+import { OrderQuoteSummary } from '@/components/order/OrderQuoteSummary';
+import { CheckoutErrorBanner } from '@/components/order/CheckoutErrorBanner';
 import { paymentService } from '@/services/payment.service';
 import { userService } from '@/services/user.service';
 import { T, Colors } from '@/constants/colors';
+import { getUserErrorMessage } from '@/utils/errorHandler';
 import { formatPrice } from '@/utils/formatters';
+import { getDeliveryCoordinates } from '@/utils/locationHelpers';
+import { hasValidCoordinates } from '@/utils/distance';
 
 const PAYMENT_METHODS = [
-  { id: 'payfast', label: 'PayFast', Icon: CreditCard, subtitle: 'Credit/Debit card' },
-  { id: 'ozow', label: 'Ozow', Icon: Building2, subtitle: 'Instant EFT' },
-  { id: 'peach', label: 'Peach Payments', Icon: Layers, subtitle: 'Multiple options' },
+  { id: 'payfast', label: 'PayFast', Icon: CreditCard, subtitle: 'Credit/Debit card & EFT' },
   { id: 'wallet', label: 'Empire Wallet', Icon: Wallet, subtitle: 'Pay with balance' },
   { id: 'cash', label: 'Cash on Delivery', Icon: Banknote, subtitle: 'Pay when delivered' },
 ];
 
 export default function CheckoutScreen() {
+  const insets = useSafeAreaInsets();
+  const footerPad = insets.bottom + 20;
   const [selectedPayment, setSelectedPayment] = useState('payfast');
   const [deliveryNotes, setDeliveryNotes] = useState('');
+  const [checkoutError, setCheckoutError] = useState('');
 
-  const { items, restaurantId, subtotal, total, discount, coupon, loyaltyPointsToRedeem, setLoyaltyPoints, clearCart } = useCartStore();
-  const { selectedAddress } = useLocationStore();
+  const { items, restaurantId, restaurantLatitude, restaurantLongitude, discount, coupon, loyaltyPointsToRedeem, setLoyaltyPoints, clearCart } = useCartStore();
+  const { selectedAddress, currentLocation } = useLocationStore();
   const { setActiveOrder } = useOrderStore();
   const { showToast } = useUIStore();
+
+  const deliveryCoordinates = getDeliveryCoordinates(selectedAddress, currentLocation);
+  const restaurantCoordinates =
+    restaurantLatitude != null &&
+    restaurantLongitude != null &&
+    hasValidCoordinates({ latitude: restaurantLatitude, longitude: restaurantLongitude })
+      ? { latitude: restaurantLatitude, longitude: restaurantLongitude }
+      : null;
+
+  const { displayQuote, displayTotal, isEstimate, isLoading: quoteLoading, isError: quoteError, refetch: refetchQuote } = useOrderQuote({
+    restaurantId,
+    items,
+    deliveryAddressId: selectedAddress?.id,
+    deliveryCoordinates,
+    restaurantCoordinates,
+    couponCode: coupon?.valid ? coupon.code : undefined,
+    loyaltyPointsToRedeem,
+    cartDiscount: discount,
+  });
+
+  const grandTotal = displayTotal;
 
   const { data: loyalty } = useQuery({
     queryKey: ['user', 'loyalty'],
@@ -39,18 +68,20 @@ export default function CheckoutScreen() {
   });
 
   const loyaltyBalance = loyalty?.balance ?? 0;
-  const loyaltyDiscount = (loyaltyPointsToRedeem / 100) * 10;
   const QUICK_OPTIONS = [100, 200, loyaltyBalance >= 100 ? Math.floor(loyaltyBalance / 100) * 100 : 0]
     .filter((v, i, arr) => v > 0 && arr.indexOf(v) === i && v <= loyaltyBalance)
     .slice(0, 3);
 
-  const deliveryFee = subtotal > 0 ? 35 : 0;
-  const serviceFee = Math.round(subtotal * 0.05 * 100) / 100;
-  const grandTotal = Math.max(0, total + deliveryFee + serviceFee - loyaltyDiscount);
-
   const placeOrder = useMutation({
     mutationFn: async () => {
-      if (!selectedAddress) throw new Error('Please select a delivery address');
+      setCheckoutError('');
+      if (!selectedAddress) {
+        throw new Error('Please add a delivery address before placing your order.');
+      }
+      if (!restaurantId || items.length === 0) {
+        throw new Error('Your cart is empty. Add items before checking out.');
+      }
+
       const order = await orderService.create({
         restaurantId: restaurantId!,
         items: items.map((i) => ({
@@ -60,24 +91,49 @@ export default function CheckoutScreen() {
           instructions: i.instructions,
         })),
         deliveryAddressId: selectedAddress.id,
+        deliveryLatitude: deliveryCoordinates?.latitude,
+        deliveryLongitude: deliveryCoordinates?.longitude,
+        restaurantLatitude: restaurantCoordinates?.latitude,
+        restaurantLongitude: restaurantCoordinates?.longitude,
         paymentMethod: selectedPayment,
         couponCode: coupon?.code,
         deliveryNotes: deliveryNotes || undefined,
         loyaltyPointsToRedeem: loyaltyPointsToRedeem > 0 ? loyaltyPointsToRedeem : undefined,
       });
+
+      if (selectedPayment === 'payfast') {
+        const result = await paymentService.initiatePayFast(order.id);
+        if (result === 'cancelled' || result === 'dismissed') {
+          throw new Error('Payment was cancelled. Your order was saved — you can pay from your orders list.');
+        }
+      } else if (selectedPayment === 'wallet') {
+        await paymentService.payWithWallet(order.id);
+      }
+
       return order;
     },
-    onSuccess: async (order) => {
+    onSuccess: (order) => {
+      setCheckoutError('');
       setActiveOrder(order.id);
-      if (selectedPayment === 'payfast') await paymentService.initiatePayFast(order.id);
-      else if (selectedPayment === 'ozow') await paymentService.initiateOzow(order.id);
-      else if (selectedPayment === 'peach') await paymentService.initiatePeach(order.id);
-      else if (selectedPayment === 'wallet') await paymentService.payWithWallet(order.id);
-      clearCart(); // clears loyaltyPointsToRedeem too
+      clearCart();
       router.replace('/(modals)/payment-success');
     },
-    onError: (error: Error) => showToast(error.message, 'error'),
+    onError: (error) => {
+      const message = getUserErrorMessage(error);
+      setCheckoutError(message);
+      showToast(message, 'error');
+    },
   });
+
+  const handlePlaceOrder = () => {
+    if (!selectedAddress) {
+      const message = 'Please add a delivery address before placing your order.';
+      setCheckoutError(message);
+      showToast(message, 'error');
+      return;
+    }
+    placeOrder.mutate();
+  };
 
   return (
     <ScreenWrapper bg="white" edges={['bottom']}>
@@ -89,7 +145,11 @@ export default function CheckoutScreen() {
         <Text style={{ fontSize: 20, fontWeight: '900', color: T.text }}>Checkout</Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120, gap: 12 }}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 16, gap: 12 }}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Delivery Address */}
         <View style={{ backgroundColor: T.bg, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: T.border }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
@@ -198,39 +258,53 @@ export default function CheckoutScreen() {
         {/* Order Summary */}
         <View style={{ backgroundColor: T.bg, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: T.border }}>
           <Text style={{ fontWeight: '800', fontSize: 15, color: T.text, marginBottom: 12 }}>Summary</Text>
-          {[
-            { label: `Subtotal (${items.reduce((n, i) => n + i.quantity, 0)} items)`, value: subtotal },
-            { label: 'Delivery fee', value: deliveryFee },
-            { label: 'Service fee', value: serviceFee },
-          ].map(({ label, value }) => (
-            <View key={label} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
-              <Text style={{ color: T.textSec }}>{label}</Text>
-              <Text style={{ fontWeight: '600', color: T.text }}>{formatPrice(value)}</Text>
-            </View>
-          ))}
-          {discount > 0 && (
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
-              <Text style={{ color: T.success }}>Discount ({coupon?.code})</Text>
-              <Text style={{ color: T.success, fontWeight: '600' }}>−{formatPrice(discount)}</Text>
+          {quoteError && (
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 10, padding: 10, backgroundColor: T.surface, borderRadius: 8 }}>
+              <AlertCircle size={16} color={T.textSec} style={{ marginTop: 2 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 13, color: T.textSec, lineHeight: 18 }}>
+                  Could not refresh fees from the server. Showing estimated fees below.
+                </Text>
+                <Pressable onPress={() => refetchQuote()} style={{ marginTop: 6 }}>
+                  <Text style={{ color: T.action, fontWeight: '700', fontSize: 13 }}>Retry</Text>
+                </Pressable>
+              </View>
             </View>
           )}
-          {loyaltyPointsToRedeem > 0 && (
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
-              <Text style={{ color: Colors.gold[500] }}>Empire Points (−{loyaltyPointsToRedeem} pts)</Text>
-              <Text style={{ color: Colors.gold[500], fontWeight: '600' }}>−{formatPrice(loyaltyDiscount)}</Text>
-            </View>
-          )}
-          <View style={{ height: 1, backgroundColor: T.border, marginVertical: 10 }} />
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <Text style={{ fontWeight: '900', fontSize: 18, color: T.text }}>Total</Text>
-            <Text style={{ fontWeight: '900', fontSize: 18, color: T.text }}>{formatPrice(grandTotal)}</Text>
-          </View>
+          <OrderQuoteSummary
+            quote={displayQuote}
+            itemCount={items.reduce((n, i) => n + i.quantity, 0)}
+            showEta
+            isEstimate={isEstimate}
+          />
         </View>
       </ScrollView>
 
-      <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: T.bg, padding: 20, borderTopWidth: 1, borderTopColor: T.border }}>
-        <Button size="lg" onPress={() => placeOrder.mutate()} loading={placeOrder.isPending} disabled={!selectedAddress}>
-          Place Order — {formatPrice(grandTotal)}
+      <View
+        style={{
+          backgroundColor: T.bg,
+          paddingTop: 16,
+          paddingHorizontal: 20,
+          paddingBottom: footerPad,
+          borderTopWidth: 1,
+          borderTopColor: T.border,
+        }}
+      >
+        <CheckoutErrorBanner message={checkoutError} onDismiss={() => setCheckoutError('')} />
+        {!selectedAddress && !checkoutError && (
+          <Text style={{ color: T.textSec, fontSize: 13, marginBottom: 10, textAlign: 'center' }}>
+            Add a delivery address to place your order
+          </Text>
+        )}
+        <Button
+          size="lg"
+          fullWidth
+          style={{ width: '100%', minHeight: 52 }}
+          onPress={handlePlaceOrder}
+          loading={placeOrder.isPending || quoteLoading}
+          disabled={!selectedAddress || items.length === 0}
+        >
+          {`Place Order — ${formatPrice(grandTotal)}`}
         </Button>
       </View>
     </ScreenWrapper>

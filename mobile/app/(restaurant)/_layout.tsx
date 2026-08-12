@@ -1,21 +1,21 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LayoutDashboard, ClipboardList, UtensilsCrossed, User } from 'lucide-react-native';
 import { Colors } from '@/constants/colors';
+import { tabBarStyle } from '@/utils/tabBar';
 
 export default function RestaurantLayout() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: {
+        tabBarStyle: tabBarStyle(insets, {
           backgroundColor: Colors.empire.black,
-          borderTopColor: Colors.empire.charcoal,
-          borderTopWidth: 1,
-          height: 64,
-          paddingBottom: 8,
-          paddingTop: 8,
-        },
+          borderColor: Colors.empire.charcoal,
+        }),
         tabBarActiveTintColor: Colors.gold[500],
         tabBarInactiveTintColor: '#666',
         tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },

@@ -1,4 +1,4 @@
-export type PaymentProvider = 'payfast' | 'ozow' | 'peach' | 'wallet' | 'cash';
+export type PaymentProvider = 'payfast' | 'wallet' | 'cash';
 
 export interface PaymentMethod {
   id: string;
@@ -21,7 +21,6 @@ export interface PaymentIntent {
   orderId: string;
   provider: PaymentProvider;
   redirectUrl?: string;
-  checkoutId?: string;
   amount: number;
 }
 

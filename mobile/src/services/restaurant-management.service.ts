@@ -175,6 +175,8 @@ export const restaurantManagementService = {
     isOpen?: boolean;
     deliveryTimeMin?: number;
     deliveryTimeMax?: number;
+    logo?: string;
+    coverImage?: string;
   }): Promise<Partial<RestaurantProfile>> {
     const res = await api.put<never, ApiResponse<Partial<RestaurantProfile>>>('/restaurant/me', data);
     return res.data;

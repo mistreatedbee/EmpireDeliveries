@@ -8,6 +8,7 @@ import { Bike, MapPin } from 'lucide-react-native';
 import { useAuthStore } from '@/stores/authStore';
 import { useLocationStore } from '@/stores/locationStore';
 import { driverService } from '@/services/driver.service';
+import { QueryErrorState } from '@/components/empire';
 import { Colors } from '@/constants/colors';
 
 const COUNTDOWN_SECONDS = 28;
@@ -21,7 +22,7 @@ export default function DriverDashboard() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const locationWatchRef = useRef<Location.LocationSubscription | null>(null);
 
-  const { data: stats, isLoading: statsLoading } = useQuery({
+  const { data: stats, isLoading: statsLoading, isError: statsError, refetch: refetchStats } = useQuery({
     queryKey: ['driver', 'stats'],
     queryFn: driverService.getStats,
     enabled: online,
@@ -158,7 +159,9 @@ export default function DriverDashboard() {
           </View>
           {online && (
             <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
-              {statsLoading ? (
+              {statsError ? (
+                <QueryErrorState message="Could not load today's stats." onRetry={() => refetchStats()} />
+              ) : statsLoading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
                 [

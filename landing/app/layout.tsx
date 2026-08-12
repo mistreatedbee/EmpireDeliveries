@@ -10,7 +10,7 @@ const inter = Inter({
 })
 
 const siteUrl = "https://empire-deliveries-psi.vercel.app"
-const ogImageUrl = `${siteUrl}/og-preview.png`
+const ogImageUrl = `${siteUrl}/og-preview.svg`
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

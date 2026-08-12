@@ -1,34 +1,32 @@
-import { Tabs, router } from 'expo-router';
-import React, { useEffect } from 'react';
+import { Tabs } from 'expo-router';
+import React from 'react';
+import { View, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LayoutDashboard, ClipboardList, Users, MessageCircle } from 'lucide-react-native';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthGate } from '@/hooks/useAuthGate';
 import { Colors } from '@/constants/colors';
+import { tabBarStyle } from '@/utils/tabBar';
 
 export default function AdminLayout() {
-  const { isAuthenticated, user } = useAuthStore();
+  const insets = useSafeAreaInsets();
+  const { allowed, isLoading, isAuthenticated } = useAuthGate({ requiredRole: 'admin' });
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      router.replace('/(auth)/login');
-      return;
-    }
-    if (user?.role !== 'admin') {
-      router.replace('/(auth)/login');
-    }
-  }, [isAuthenticated, user?.role]);
+  if (isLoading || !isAuthenticated || !allowed) {
+    return (
+      <View style={{ flex: 1, backgroundColor: Colors.empire.black, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator size="large" color={Colors.gold[500]} />
+      </View>
+    );
+  }
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: {
+        tabBarStyle: tabBarStyle(insets, {
           backgroundColor: Colors.empire.black,
-          borderTopColor: Colors.empire.charcoal,
-          borderTopWidth: 1,
-          height: 72,
-          paddingBottom: 12,
-          paddingTop: 8,
-        },
+          borderColor: Colors.empire.charcoal,
+        }),
         tabBarActiveTintColor: Colors.gold[500],
         tabBarInactiveTintColor: '#666',
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },

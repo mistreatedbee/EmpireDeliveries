@@ -1,18 +1,28 @@
 import React from 'react';
-import { ScrollView, Pressable, Text, View } from 'react-native';
+import { ScrollView, Pressable, Text } from 'react-native';
+import { router } from 'expo-router';
 import { Category } from '@/types/restaurant.types';
 
 interface CategoryRowProps {
   categories: Category[];
   activeCategory?: string;
-  onSelect: (slug: string) => void;
+  onSelect?: (slug: string) => void;
 }
 
 export function CategoryRow({ categories, activeCategory, onSelect }: CategoryRowProps) {
+  const openCategory = (slug: string) => {
+    onSelect?.(slug);
+    if (slug) {
+      router.push({ pathname: '/(customer)/(home)/restaurant-list', params: { category: slug } });
+    } else {
+      router.push('/(customer)/(home)/restaurant-list');
+    }
+  };
+
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 16, gap: 10 }}>
       <Pressable
-        onPress={() => onSelect('')}
+        onPress={() => openCategory('')}
         style={{
           paddingHorizontal: 16,
           paddingVertical: 8,
@@ -25,7 +35,7 @@ export function CategoryRow({ categories, activeCategory, onSelect }: CategoryRo
       {categories.map((cat) => (
         <Pressable
           key={cat.id}
-          onPress={() => onSelect(cat.slug)}
+          onPress={() => openCategory(cat.slug)}
           style={{
             flexDirection: 'row',
             alignItems: 'center',

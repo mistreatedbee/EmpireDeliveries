@@ -1,4 +1,5 @@
 import { clearAdminSession, getStoredToken } from "@/lib/adminAuth"
+import { normalizeApplication, normalizeApplications } from "@/lib/normalizeApplication"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL!
 
@@ -60,6 +61,11 @@ export interface Application {
   submittedAt: string
   rejectionReason?: string
   applicationType: "driver" | "restaurant"
+  incompleteSignup?: boolean
+  idDocumentUrl?: string
+  driversLicenseUrl?: string
+  vehicleRegistrationUrl?: string
+  businessDocUrl?: string
   vehicleType?: string
   vehicleMake?: string
   vehicleModel?: string
@@ -93,11 +99,15 @@ export interface AdminUser {
 export const adminApi = {
   getStats: () => request<AdminStats>("/admin/stats"),
 
-  getApplications: (params?: { type?: string; status?: string }) =>
-    request<Application[]>(withQuery("/admin/applications", params)),
+  getApplications: async (params?: { type?: string; status?: string }) => {
+    const data = await request<Application[]>(withQuery("/admin/applications", params))
+    return normalizeApplications(data as unknown as Record<string, unknown>[]) as unknown as Application[]
+  },
 
-  getApplication: (id: string, type?: string) =>
-    request<Application>(withQuery(`/admin/applications/${id}`, { type })),
+  getApplication: async (id: string, type?: string) => {
+    const data = await request<Application>(withQuery(`/admin/applications/${id}`, { type }))
+    return normalizeApplication(data as unknown as Record<string, unknown>) as unknown as Application
+  },
 
   approveApplication: (id: string, type: "driver" | "restaurant") =>
     request(`/admin/applications/${id}/approve`, { method: "PUT", body: JSON.stringify({ type }) }),

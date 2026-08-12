@@ -8,7 +8,7 @@ import { authService } from '@/services/auth.service';
 import { useUIStore } from '@/stores/uiStore';
 import { isValidEmail, isValidSAPhone, normalizeSAPhone } from '@/utils/validators';
 import { T } from '@/constants/colors';
-import { AppError } from '@/types/api.types';
+import { getUserErrorMessage } from '@/utils/errorHandler';
 
 export default function RegisterScreen() {
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', password: '' });
@@ -36,14 +36,19 @@ export default function RegisterScreen() {
         },
       });
     },
-    onError: (error: AppError) => {
-      if (error.message === 'User already exists') {
+    onError: (error) => {
+      const appError = error as { code?: string; field?: string; message?: string };
+      const existsCodes = ['AUTH_EMAIL_ALREADY_EXISTS', 'AUTH_USER_ALREADY_EXISTS'];
+      if (
+        existsCodes.includes(appError.code ?? '') ||
+        appError.message?.includes('already exists')
+      ) {
         showToast('An account with this email already exists. Please log in instead.', 'error');
         router.push('/(auth)/login');
-      } else if (error.field) {
-        setErrors((e) => ({ ...e, [error.field!]: error.message }));
+      } else if (appError.field) {
+        setErrors((e) => ({ ...e, [appError.field!]: getUserErrorMessage(error) }));
       } else {
-        showToast(error.message, 'error');
+        showToast(getUserErrorMessage(error), 'error');
       }
     },
   });

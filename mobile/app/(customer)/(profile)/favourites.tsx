@@ -11,27 +11,10 @@ import { userService } from '@/services/user.service';
 import { restaurantService } from '@/services/restaurant.service';
 import { Restaurant } from '@/types/restaurant.types';
 import { T } from '@/constants/colors';
+import { normalizeRestaurant } from '@/utils/normalizeRestaurant';
 
 function mapFavToRestaurant(r: Record<string, unknown>): Restaurant {
-  return {
-    id: r.id as string,
-    name: r.name as string,
-    description: (r.description ?? '') as string,
-    logo: (r.logo ?? '') as string,
-    coverImage: (r.coverImage ?? r.cover_image ?? '') as string,
-    address: (r.address ?? '') as string,
-    coordinates: { latitude: 0, longitude: 0 },
-    rating: Number(r.rating ?? 0),
-    reviewCount: Number(r.reviewCount ?? r.review_count ?? 0),
-    deliveryFee: Number(r.deliveryFee ?? r.delivery_fee ?? 0),
-    deliveryTime: Number(r.deliveryTime ?? r.deliveryTimeMin ?? r.delivery_time_min ?? 30),
-    minOrder: Number(r.minOrder ?? r.min_order ?? 0),
-    status: (r.isOpen ?? r.is_open) ? 'open' : 'closed',
-    categories: [],
-    isOpen: Boolean(r.isOpen ?? r.is_open),
-    isFeatured: Boolean(r.isFeatured ?? r.is_featured),
-    isFavourited: true,
-  };
+  return { ...normalizeRestaurant(r), isFavourited: true };
 }
 
 export default function FavouritesScreen() {

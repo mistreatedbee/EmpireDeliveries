@@ -1,5 +1,6 @@
 import api from './api';
 import { ApiResponse } from '@/types/api.types';
+import { normalizeApplication, normalizeApplications } from '@/utils/normalizeApplication';
 
 export interface AdminStats {
   users: { total: number; customers: number; drivers: number; restaurants: number; pendingApproval: number };
@@ -19,6 +20,11 @@ export interface Application {
   submittedAt: string;
   rejectionReason?: string;
   applicationType: 'driver' | 'restaurant';
+  incompleteSignup?: boolean;
+  idDocumentUrl?: string;
+  driversLicenseUrl?: string;
+  vehicleRegistrationUrl?: string;
+  businessDocUrl?: string;
   // driver-specific
   vehicleType?: string;
   vehicleMake?: string;
@@ -58,12 +64,12 @@ export const adminService = {
 
   async getApplications(params?: { type?: string; status?: string }): Promise<Application[]> {
     const res = await api.get<never, ApiResponse<Application[]>>('/admin/applications', { params });
-    return res.data;
+    return normalizeApplications(res.data) as Application[];
   },
 
   async getApplication(id: string, type?: string): Promise<Application> {
     const res = await api.get<never, ApiResponse<Application>>(`/admin/applications/${id}`, { params: { type } });
-    return res.data;
+    return normalizeApplication(res.data) as Application;
   },
 
   async approveApplication(id: string, type: 'driver' | 'restaurant'): Promise<void> {

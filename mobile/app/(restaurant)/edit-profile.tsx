@@ -4,14 +4,17 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  SafeAreaView,
   StatusBar,
   KeyboardAvoidingView,
   Platform,
+  Image,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft, Camera } from 'lucide-react-native';
 import {
   Button,
   Input,
@@ -22,6 +25,8 @@ import {
 } from '@/components/empire';
 import { restaurantManagementService } from '@/services/restaurant-management.service';
 import { useUIStore } from '@/stores/uiStore';
+import { uploadImageFromPicker } from '@/utils/imageUpload';
+import { getUserErrorMessage } from '@/utils/errorHandler';
 
 interface FormState {
   name: string;
@@ -58,6 +63,10 @@ export default function EditRestaurantProfile() {
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [initialised, setInitialised] = useState(false);
+  const [logo, setLogo] = useState<string | undefined>();
+  const [coverImage, setCoverImage] = useState<string | undefined>();
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ['restaurant', 'profile'],
@@ -76,6 +85,8 @@ export default function EditRestaurantProfile() {
         deliveryTimeMin: profile.deliveryTimeMin != null ? String(profile.deliveryTimeMin) : '',
         deliveryTimeMax: profile.deliveryTimeMax != null ? String(profile.deliveryTimeMax) : '',
       });
+      setLogo(profile.logo);
+      setCoverImage(profile.coverImage);
       setInitialised(true);
     }
   }, [profile, initialised]);
@@ -91,14 +102,16 @@ export default function EditRestaurantProfile() {
         isOpen: form.isOpen,
         deliveryTimeMin: parseInt(form.deliveryTimeMin, 10) || 0,
         deliveryTimeMax: parseInt(form.deliveryTimeMax, 10) || 0,
+        logo,
+        coverImage,
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['restaurant', 'profile'] });
       showToast('Profile updated successfully.', 'success');
       router.back();
     },
-    onError: (err: any) => {
-      showToast(err?.message ?? 'Failed to update profile. Please try again.', 'error');
+    onError: (err) => {
+      showToast(getUserErrorMessage(err, 'Failed to update profile. Please try again.'), 'error');
     },
   });
 
@@ -128,6 +141,30 @@ export default function EditRestaurantProfile() {
   function handleSave() {
     if (!validate()) return;
     saveMutation.mutate();
+  }
+
+  async function handlePickLogo() {
+    setUploadingLogo(true);
+    try {
+      const url = await uploadImageFromPicker('restaurant-branding');
+      if (url) setLogo(url);
+    } catch {
+      Alert.alert('Upload failed', 'Could not upload logo. Please try again.');
+    } finally {
+      setUploadingLogo(false);
+    }
+  }
+
+  async function handlePickCover() {
+    setUploadingCover(true);
+    try {
+      const url = await uploadImageFromPicker('restaurant-branding');
+      if (url) setCoverImage(url);
+    } catch {
+      Alert.alert('Upload failed', 'Could not upload cover image. Please try again.');
+    } finally {
+      setUploadingCover(false);
+    }
   }
 
   return (
@@ -180,6 +217,44 @@ export default function EditRestaurantProfile() {
                   </Text>
                 </CardBody>
               </Card>
+
+              <Text className="text-t-textSec text-xs mb-2" style={{ fontFamily: 'Inter_600SemiBold' }}>
+                Restaurant Images
+              </Text>
+              <View className="flex-row gap-3 mb-5">
+                <TouchableOpacity
+                  onPress={handlePickLogo}
+                  disabled={uploadingLogo}
+                  activeOpacity={0.8}
+                  className="flex-1 rounded-2xl overflow-hidden border border-t-border bg-t-surface2"
+                  style={{ height: 120, alignItems: 'center', justifyContent: 'center' }}
+                >
+                  {logo ? (
+                    <Image source={{ uri: logo }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                  ) : (
+                    <>
+                      {uploadingLogo ? <ActivityIndicator color="#C9A227" /> : <Camera size={28} color="#888" />}
+                      <Text className="text-t-textSec text-xs mt-2">Logo</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handlePickCover}
+                  disabled={uploadingCover}
+                  activeOpacity={0.8}
+                  className="flex-1 rounded-2xl overflow-hidden border border-t-border bg-t-surface2"
+                  style={{ height: 120, alignItems: 'center', justifyContent: 'center' }}
+                >
+                  {coverImage ? (
+                    <Image source={{ uri: coverImage }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                  ) : (
+                    <>
+                      {uploadingCover ? <ActivityIndicator color="#C9A227" /> : <Camera size={28} color="#888" />}
+                      <Text className="text-t-textSec text-xs mt-2">Cover</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
 
               <Input
                 label="Restaurant Name"

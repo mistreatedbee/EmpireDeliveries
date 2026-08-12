@@ -9,7 +9,7 @@ import { authService } from '@/services/auth.service';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 import { T } from '@/constants/colors';
-import { AppError } from '@/types/api.types';
+import { getUserErrorMessage } from '@/utils/errorHandler';
 
 export default function OtpScreen() {
   const allParams = useLocalSearchParams<Record<string, string>>();
@@ -57,16 +57,16 @@ export default function OtpScreen() {
         params: forwardParams,
       } as any);
     },
-    onError: (error: AppError) => showToast(error.message, 'error'),
+    onError: (error) => showToast(getUserErrorMessage(error), 'error'),
   });
 
   const resendMutation = useMutation({
-    mutationFn: () => authService.resendOtp({ email }),
+    mutationFn: () => authService.resendOtp({ email, purpose }),
     onSuccess: () => {
       setCountdown(60);
       showToast('Verification code resent', 'success');
     },
-    onError: (error: AppError) => showToast(error.message, 'error'),
+    onError: (error) => showToast(getUserErrorMessage(error), 'error'),
   });
 
   const handleVerify = useCallback(() => {

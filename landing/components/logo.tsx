@@ -7,7 +7,7 @@ export function Logo({ className, onDark = false }: { className?: string; onDark
       <span aria-hidden="true" className="relative flex size-9 shrink-0 overflow-hidden rounded-xl shadow-sm">
         {/* Black-bg logo: dark badge, reads clearly on light backgrounds */}
         <Image
-          src="/brand/logo-black-bg.jpg"
+          src="/brand/logo-black-bg.svg"
           alt=""
           fill
           sizes="36px"
@@ -15,7 +15,7 @@ export function Logo({ className, onDark = false }: { className?: string; onDark
         />
         {/* White-bg logo: light badge, reads clearly on dark backgrounds */}
         <Image
-          src="/brand/logo-white-bg.jpg"
+          src="/brand/logo-white-bg.svg"
           alt=""
           fill
           sizes="36px"

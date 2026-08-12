@@ -28,7 +28,7 @@ export function Careers() {
             <div className="relative">
               <div className="relative overflow-hidden rounded-3xl border border-border">
                 <Image
-                  src="/images/driver.png"
+                  src="/images/driver.svg"
                   alt="An Empire Deliveries team member ready to make an impact"
                   width={640}
                   height={640}

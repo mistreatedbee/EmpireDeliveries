@@ -8,7 +8,7 @@ import { KeyboardWrapper } from '@/components/layout/KeyboardWrapper';
 import { authService } from '@/services/auth.service';
 import { useUIStore } from '@/stores/uiStore';
 import { T } from '@/constants/colors';
-import { AppError } from '@/types/api.types';
+import { getUserErrorMessage } from '@/utils/errorHandler';
 
 export default function ResetPasswordScreen() {
   const { token } = useLocalSearchParams<{ token?: string }>();
@@ -24,7 +24,7 @@ export default function ResetPasswordScreen() {
       showToast('Password reset successfully', 'success');
       router.replace('/(auth)/login');
     },
-    onError: (error: AppError) => showToast(error.message, 'error'),
+    onError: (error) => showToast(getUserErrorMessage(error), 'error'),
   });
 
   const validate = () => {

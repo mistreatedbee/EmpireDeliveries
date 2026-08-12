@@ -11,7 +11,8 @@ import { isValidEmail } from '@/utils/validators';
 import { registerForPushNotifications } from '@/lib/notifications';
 import { notificationService } from '@/services/notification.service';
 import { T } from '@/constants/colors';
-import { AppError } from '@/types/api.types';
+import { resolvePostAuthRoute } from '@/utils/authRouting';
+import { getUserErrorMessage } from '@/utils/errorHandler';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -26,24 +27,27 @@ export default function LoginScreen() {
     mutationFn: () => authService.login({ email: email.trim().toLowerCase(), password }),
     onSuccess: async ({ user, tokens }) => {
       await setAuth(user, tokens.accessToken, tokens.refreshToken);
-      const pushToken = await registerForPushNotifications();
-      if (pushToken) await notificationService.registerToken(pushToken);
-      if (user.role === 'driver') router.replace('/(driver)');
-      else if (user.role === 'restaurant') router.replace('/(restaurant)');
-      else if (user.role === 'admin') router.replace('/(admin)');
-      else router.replace('/(customer)' as any);
+      router.replace(resolvePostAuthRoute(user) as any);
+      void registerForPushNotifications().then((pushToken) => {
+        if (pushToken) notificationService.registerToken(pushToken).catch(() => null);
+      });
     },
-    onError: (error: AppError) => {
-      if (error.code === 'PENDING_APPROVAL') {
+    onError: (error) => {
+      const appError = error as { code?: string; field?: string; message?: string };
+      if (appError.code === 'PENDING_APPROVAL') {
         router.replace('/(auth)/pending-approval');
-      } else if (error.code === 'ACCOUNT_SUSPENDED') {
-        router.replace({ pathname: '/(auth)/suspended', params: { reason: error.message } });
-      } else if (error.field === 'email') {
-        setErrors({ email: error.message });
-      } else if (error.field === 'password') {
-        setErrors({ password: error.message });
+      } else if (appError.code === 'ACCOUNT_SUSPENDED' || appError.code === 'ACCOUNT_REJECTED') {
+        router.replace({ pathname: '/(auth)/suspended', params: { reason: getUserErrorMessage(error) } });
+      } else if (appError.code === 'AUTH_UNAUTHORIZED' || appError.code === 'AUTH_INVALID_CREDENTIALS' || appError.code === 'HTTP_401') {
+        setErrors({ password: 'Incorrect email or password.' });
+      } else if (appError.code === 'USER_NOT_FOUND') {
+        showToast('Account not set up yet. Please sign up first.', 'error');
+      } else if (appError.field === 'email') {
+        setErrors({ email: getUserErrorMessage(error) });
+      } else if (appError.field === 'password') {
+        setErrors({ password: getUserErrorMessage(error) });
       } else {
-        showToast(error.message, 'error');
+        showToast(getUserErrorMessage(error), 'error');
       }
     },
   });

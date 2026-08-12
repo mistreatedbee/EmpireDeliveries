@@ -9,7 +9,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 import { isValidEmail, isValidSAPhone, normalizeSAPhone } from '@/utils/validators';
 import { T, Fonts } from '@/constants/colors';
-import { AppError } from '@/types/api.types';
+import { getUserErrorMessage } from '@/utils/errorHandler';
 
 function StepHeader({ current, total, title }: { current: number; total: number; title: string }) {
   return (
@@ -84,14 +84,16 @@ export default function DriverStep1() {
         },
       });
     },
-    onError: (error: AppError) => {
-      if (error.message === 'User already exists') {
+    onError: (error) => {
+      const appError = error as { code?: string; field?: string };
+      const existsCodes = ['AUTH_EMAIL_ALREADY_EXISTS', 'AUTH_USER_ALREADY_EXISTS'];
+      if (existsCodes.includes(appError.code ?? '')) {
         showToast('An account with this email already exists. Please log in instead.', 'error');
         router.push('/(auth)/login');
-      } else if (error.field) {
-        setErrors((e) => ({ ...e, [error.field!]: error.message }));
+      } else if (appError.field) {
+        setErrors((e) => ({ ...e, [appError.field!]: getUserErrorMessage(error) }));
       } else {
-        showToast(error.message, 'error');
+        showToast(getUserErrorMessage(error), 'error');
       }
     },
   });

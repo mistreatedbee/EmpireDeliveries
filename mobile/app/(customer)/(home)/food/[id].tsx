@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ScrollView, View, Text, Image, Pressable } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -6,28 +6,62 @@ import { Check } from 'lucide-react-native';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { EmptyState, QueryErrorState } from '@/components/empire';
 import { useCartStore } from '@/stores/cartStore';
 import { useUIStore } from '@/stores/uiStore';
 import { restaurantService } from '@/services/restaurant.service';
+import { geocodingService } from '@/services/geocoding.service';
+import { useRestaurantDetail } from '@/hooks/useRestaurantDetail';
+import { hasValidCoordinates } from '@/utils/distance';
 import { queryKeys } from '@/constants/queryKeys';
 import { Addon } from '@/types/restaurant.types';
 import { T } from '@/constants/colors';
 import { formatPrice } from '@/utils/formatters';
+import { normalizeRouteParam } from '@/utils/routeParams';
 
 export default function FoodDetailScreen() {
-  const { id, restaurantId } = useLocalSearchParams<{ id: string; restaurantId: string }>();
+  const params = useLocalSearchParams<{ id: string | string[]; restaurantId: string | string[] }>();
+  const id = normalizeRouteParam(params.id);
+  const restaurantId = normalizeRouteParam(params.restaurantId);
   const [quantity, setQuantity] = useState(1);
   const [selectedAddons, setSelectedAddons] = useState<Addon[]>([]);
   const [instructions, setInstructions] = useState('');
 
-  const { data: item, isLoading } = useQuery({
-    queryKey: [...queryKeys.restaurants.menu(restaurantId), id],
-    queryFn: () => restaurantService.getMenuItem(restaurantId, id),
+  const { data: restaurant } = useRestaurantDetail(restaurantId);
+
+  const { data: item, isLoading, isError, refetch } = useQuery({
+    queryKey: [...queryKeys.restaurants.menu(restaurantId ?? ''), id ?? ''],
+    queryFn: () => restaurantService.getMenuItem(restaurantId!, id!),
     enabled: !!id && !!restaurantId,
   });
 
-  const { addItem, restaurantId: cartRestaurantId, clearForNewRestaurant } = useCartStore();
+  const { addItem, restaurantId: cartRestaurantId, clearForNewRestaurant, setRestaurantLocation } = useCartStore();
   const { showToast } = useUIStore();
+
+  useEffect(() => {
+    if (!restaurant) return;
+
+    let cancelled = false;
+
+    async function resolveRestaurantCoords() {
+      if (hasValidCoordinates(restaurant.coordinates)) {
+        setRestaurantLocation(restaurant.coordinates.latitude, restaurant.coordinates.longitude);
+        return;
+      }
+
+      if (!restaurant.address) return;
+
+      const coords = await geocodingService.geocodeAddress(restaurant.address);
+      if (!cancelled && coords && hasValidCoordinates(coords)) {
+        setRestaurantLocation(coords.latitude, coords.longitude);
+      }
+    }
+
+    void resolveRestaurantCoords();
+    return () => {
+      cancelled = true;
+    };
+  }, [restaurant, setRestaurantLocation]);
 
   const toggleAddon = (addon: Addon) => {
     setSelectedAddons((prev) =>
@@ -61,7 +95,29 @@ export default function FoodDetailScreen() {
     );
   }
 
-  if (!item) return null;
+  if (isError) {
+    return (
+      <ScreenWrapper bg="white">
+        <QueryErrorState message="Could not load this menu item." onRetry={() => refetch()} />
+      </ScreenWrapper>
+    );
+  }
+
+  if (!item) {
+    return (
+      <ScreenWrapper bg="white">
+        <EmptyState
+          title="Item not found"
+          description="This menu item may have been removed or is unavailable."
+          action={
+            <Button variant="secondary" onPress={() => router.back()}>
+              Go back
+            </Button>
+          }
+        />
+      </ScreenWrapper>
+    );
+  }
 
   return (
     <ScreenWrapper bg="white" edges={['bottom']}>

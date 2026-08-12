@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ScrollView, View, Text, Image, Pressable, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Clock, Tag, Heart, Star } from 'lucide-react-native';
@@ -6,15 +6,20 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { QueryErrorState } from '@/components/empire';
 import { useRestaurantDetail, useMenuItems } from '@/hooks/useRestaurantDetail';
 import { useCartStore } from '@/stores/cartStore';
 import { useUIStore } from '@/stores/uiStore';
 import { MenuItem, MenuCategory } from '@/types/restaurant.types';
 import { restaurantService } from '@/services/restaurant.service';
+import { geocodingService } from '@/services/geocoding.service';
 import { userService } from '@/services/user.service';
+import { hasValidCoordinates } from '@/utils/distance';
 import { queryKeys } from '@/constants/queryKeys';
 import { T } from '@/constants/colors';
 import { formatPrice } from '@/utils/formatters';
+import { normalizeRouteParam } from '@/utils/routeParams';
+import { getUserErrorMessage } from '@/utils/errorHandler';
 
 function MenuItemRow({ item, onAdd }: { item: MenuItem; onAdd: (item: MenuItem) => void }) {
   return (
@@ -28,7 +33,13 @@ function MenuItemRow({ item, onAdd }: { item: MenuItem; onAdd: (item: MenuItem) 
         <Text style={{ fontSize: 15, fontWeight: '700', color: T.text }}>{formatPrice(item.price)}</Text>
       </View>
       <View style={{ position: 'relative' }}>
-        <Image source={{ uri: item.image }} style={{ width: 88, height: 88, borderRadius: 10, backgroundColor: T.surface }} />
+        {item.image ? (
+          <Image source={{ uri: item.image }} style={{ width: 88, height: 88, borderRadius: 10, backgroundColor: T.surface }} />
+        ) : (
+          <View style={{ width: 88, height: 88, borderRadius: 10, backgroundColor: T.surface, alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ fontSize: 28 }}>🍽️</Text>
+          </View>
+        )}
         <Pressable
           onPress={(e) => { e.stopPropagation(); onAdd(item); }}
           style={{ position: 'absolute', bottom: -8, right: -8, width: 28, height: 28, borderRadius: 14, backgroundColor: T.action, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4, elevation: 4 }}
@@ -41,19 +52,51 @@ function MenuItemRow({ item, onAdd }: { item: MenuItem; onAdd: (item: MenuItem) 
 }
 
 export default function RestaurantDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id: rawId } = useLocalSearchParams<{ id: string | string[] }>();
+  const id = normalizeRouteParam(rawId);
   const [activeTab, setActiveTab] = useState<'menu' | 'reviews'>('menu');
   const queryClient = useQueryClient();
 
-  const { data: restaurant, isLoading: loadingRestaurant } = useRestaurantDetail(id);
-  const { data: menuCategories, isLoading: loadingMenu } = useMenuItems(id);
-  const { addItem, itemCount, restaurantId, restaurantName } = useCartStore();
+  const {
+    data: restaurant,
+    isLoading: loadingRestaurant,
+    isError: restaurantError,
+    error: restaurantQueryError,
+    refetch: refetchRestaurant,
+  } = useRestaurantDetail(id);
+  const { data: menuCategories, isLoading: loadingMenu } = useMenuItems(id ?? '');
+  const { addItem, itemCount, restaurantId, restaurantName, setRestaurantLocation } = useCartStore();
   const { showToast } = useUIStore();
 
+  useEffect(() => {
+    if (!restaurant) return;
+
+    let cancelled = false;
+
+    async function resolveRestaurantCoords() {
+      if (hasValidCoordinates(restaurant.coordinates)) {
+        setRestaurantLocation(restaurant.coordinates.latitude, restaurant.coordinates.longitude);
+        return;
+      }
+
+      if (!restaurant.address) return;
+
+      const coords = await geocodingService.geocodeAddress(restaurant.address);
+      if (!cancelled && coords && hasValidCoordinates(coords)) {
+        setRestaurantLocation(coords.latitude, coords.longitude);
+      }
+    }
+
+    void resolveRestaurantCoords();
+    return () => {
+      cancelled = true;
+    };
+  }, [restaurant, setRestaurantLocation]);
+
   // Reviews
-  const { data: reviewsPage, isLoading: reviewsLoading } = useQuery({
-    queryKey: queryKeys.restaurants.reviews(id),
-    queryFn: () => restaurantService.getReviews(id),
+  const { data: reviews = [], isLoading: reviewsLoading } = useQuery({
+    queryKey: queryKeys.restaurants.reviews(id ?? ''),
+    queryFn: () => restaurantService.getReviews(id!),
     enabled: activeTab === 'reviews' && !!id,
   });
 
@@ -68,11 +111,12 @@ export default function RestaurantDetailScreen() {
     : false;
 
   const favouriteMutation = useMutation({
-    mutationFn: () => restaurantService.toggleFavourite(id),
+    mutationFn: () => restaurantService.toggleFavourite(id!),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['user', 'favourites'] }),
   });
 
   const handleAddItem = (item: MenuItem) => {
+    if (!id || !restaurant) return;
     if (restaurantId && restaurantId !== id) {
       useUIStore.getState().showToast(`Your cart has items from ${restaurantName}. Clear cart to order from here?`, 'warning');
       return;
@@ -81,12 +125,46 @@ export default function RestaurantDetailScreen() {
       router.push(`/(customer)/(home)/food/${item.id}?restaurantId=${id}`);
       return;
     }
-    addItem(item, [], 1);
+    addItem({ ...item, restaurantId: id }, [], 1);
+    if (!restaurantId) {
+      useCartStore.setState({ restaurantId: id, restaurantName: restaurant.name });
+    }
     showToast(`${item.name} added`, 'success');
   };
 
+  if (!id) {
+    return (
+      <ScreenWrapper bg="white">
+        <EmptyState title="Restaurant not found" subtitle="This link is invalid. Go back and pick a restaurant from the home screen." />
+      </ScreenWrapper>
+    );
+  }
+
   if (loadingRestaurant) {
     return <ScreenWrapper bg="white"><View style={{ padding: 16 }}><SkeletonCard /></View></ScreenWrapper>;
+  }
+
+  if (restaurantError) {
+    const appError = restaurantQueryError as { code?: string; statusCode?: number; message?: string };
+    const isMissing = appError?.code === 'NOT_FOUND' || appError?.statusCode === 404;
+    if (isMissing) {
+      return (
+        <ScreenWrapper bg="white">
+          <EmptyState
+            title="Restaurant not found"
+            subtitle="It may have been removed or is no longer available."
+          />
+        </ScreenWrapper>
+      );
+    }
+    return (
+      <ScreenWrapper bg="white">
+        <QueryErrorState
+          message={getUserErrorMessage(restaurantQueryError, 'Could not load this restaurant. Check your connection and try again.')}
+          onRetry={() => refetchRestaurant()}
+        />
+      </ScreenWrapper>
+    );
   }
 
   if (!restaurant) {
@@ -98,7 +176,13 @@ export default function RestaurantDetailScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Hero */}
         <View style={{ position: 'relative' }}>
-          <Image source={{ uri: restaurant.coverImage }} style={{ width: '100%', height: 220, backgroundColor: T.surface }} />
+          {restaurant.coverImage ? (
+            <Image source={{ uri: restaurant.coverImage }} style={{ width: '100%', height: 220, backgroundColor: T.surface }} />
+          ) : (
+            <View style={{ width: '100%', height: 220, backgroundColor: T.surface, alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ fontSize: 48 }}>🍽️</Text>
+            </View>
+          )}
           {/* Back button */}
           <Pressable
             onPress={() => router.back()}
@@ -169,9 +253,18 @@ export default function RestaurantDetailScreen() {
           <View style={{ paddingHorizontal: 20 }}>
             {loadingMenu
               ? [0, 1].map((i) => <SkeletonCard key={i} />)
-              : menuCategories?.map((cat: MenuCategory) => (
+              : !menuCategories?.length
+                ? (
+                  <Text style={{ color: T.textSec, textAlign: 'center', marginTop: 40, lineHeight: 22 }}>
+                    This restaurant has not published a menu yet.
+                  </Text>
+                )
+                : menuCategories.map((cat: MenuCategory) => (
                   <View key={cat.id} style={{ marginBottom: 8 }}>
                     <Text style={{ fontSize: 17, fontWeight: '800', color: T.text, marginTop: 24, marginBottom: 4 }}>{cat.name}</Text>
+                    {cat.items.length === 0 ? (
+                      <Text style={{ color: T.textTer, fontSize: 13, marginBottom: 8 }}>No items in this category</Text>
+                    ) : null}
                     {cat.items.map((item: MenuItem) => (
                       <MenuItemRow key={item.id} item={item} onAdd={handleAddItem} />
                     ))}
@@ -186,14 +279,12 @@ export default function RestaurantDetailScreen() {
             {reviewsLoading && (
               <ActivityIndicator color={T.action} style={{ marginTop: 40 }} />
             )}
-            {!reviewsLoading && (!reviewsPage?.data || reviewsPage.data.length === 0) && (
+            {!reviewsLoading && reviews.length === 0 && (
               <Text style={{ color: T.textTer, textAlign: 'center', marginTop: 40 }}>No reviews yet</Text>
             )}
-            {!reviewsLoading && (reviewsPage?.data ?? []).map((r) => {
-              // Backend may return firstName/lastName or userName — handle both shapes
-              const raw = r as typeof r & { firstName?: string; lastName?: string; review?: string };
-              const displayName = r.userName || `${raw.firstName ?? ''} ${raw.lastName ?? ''}`.trim() || 'Customer';
-              const reviewText = r.comment || raw.review || '';
+            {!reviewsLoading && reviews.map((r) => {
+              const displayName = r.userName || 'Customer';
+              const reviewText = r.comment || '';
               return (
                 <View
                   key={r.id}

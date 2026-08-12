@@ -1,29 +1,53 @@
 import * as WebBrowser from 'expo-web-browser';
 import { Config } from '@/constants/config';
 import api from './api';
+import { orderService } from './order.service';
 import { PaymentIntent, PaymentConfirmation, PaymentMethod, WalletTransaction } from '@/types/payment.types';
 import { ApiResponse } from '@/types/api.types';
+import { parseApiError } from '@/utils/errorHandler';
+
+export type PaymentBrowserResult = 'success' | 'cancelled' | 'dismissed';
+
+const REDIRECT_PREFIX = `${Config.API_BASE_URL}/payments/payfast/`;
+
+async function openPaymentBrowser(redirectUrl: string): Promise<PaymentBrowserResult> {
+  try {
+    const result = await WebBrowser.openAuthSessionAsync(redirectUrl, REDIRECT_PREFIX);
+    if (result.type === 'success' && result.url) {
+      if (result.url.includes('/payments/payfast/return') || result.url.includes('payment/success')) {
+        return 'success';
+      }
+      if (result.url.includes('/payments/payfast/cancel') || result.url.includes('payment/cancelled')) {
+        return 'cancelled';
+      }
+    }
+    if (result.type === 'cancel' || result.type === 'dismiss') return 'cancelled';
+    return 'dismissed';
+  } catch (error) {
+    throw parseApiError(error);
+  }
+}
+
+async function waitForPaidOrder(orderId: string, attempts = 20): Promise<boolean> {
+  for (let i = 0; i < attempts; i++) {
+    const status = await orderService.getPaymentStatus(orderId);
+    if (status.paymentStatus === 'paid') return true;
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+  }
+  return false;
+}
 
 export const paymentService = {
-  async initiatePayFast(orderId: string): Promise<void> {
+  async initiatePayFast(orderId: string): Promise<PaymentBrowserResult> {
     const res = await api.post<never, ApiResponse<PaymentIntent>>('/payments/payfast/initiate', { orderId });
     const { redirectUrl } = res.data;
-    if (!redirectUrl) return;
-    await WebBrowser.openAuthSessionAsync(redirectUrl, `${Config.APP_SCHEME}://`);
-  },
-
-  async initiateOzow(orderId: string): Promise<void> {
-    const res = await api.post<never, ApiResponse<PaymentIntent>>('/payments/ozow/initiate', { orderId });
-    const { redirectUrl } = res.data;
-    if (!redirectUrl) return;
-    await WebBrowser.openAuthSessionAsync(redirectUrl, `${Config.APP_SCHEME}://`);
-  },
-
-  async initiatePeach(orderId: string): Promise<void> {
-    const res = await api.post<never, ApiResponse<PaymentIntent>>('/payments/peach/initiate', { orderId });
-    const { redirectUrl } = res.data;
-    if (!redirectUrl) return;
-    await WebBrowser.openAuthSessionAsync(redirectUrl, `${Config.APP_SCHEME}://`);
+    if (!redirectUrl) throw new Error('PayFast could not be started. Please try again.');
+    const browserResult = await openPaymentBrowser(redirectUrl);
+    if (browserResult === 'success') {
+      await api.post('/payments/confirm', { orderId }).catch(() => undefined);
+      await waitForPaidOrder(orderId);
+    }
+    return browserResult;
   },
 
   async payWithWallet(orderId: string): Promise<{ newBalance: number }> {
@@ -41,11 +65,11 @@ export const paymentService = {
     return res.data;
   },
 
-  async topupWallet(amount: number): Promise<void> {
+  async topupWallet(amount: number): Promise<PaymentBrowserResult> {
     const res = await api.post<never, ApiResponse<{ redirectUrl: string }>>('/payments/wallet/topup', { amount });
     const { redirectUrl } = res.data;
-    if (!redirectUrl) return;
-    await WebBrowser.openAuthSessionAsync(redirectUrl, `${Config.APP_SCHEME}://`);
+    if (!redirectUrl) throw new Error('Wallet top-up could not be started.');
+    return openPaymentBrowser(redirectUrl);
   },
 
   async confirmPayment(confirmation: PaymentConfirmation): Promise<void> {
