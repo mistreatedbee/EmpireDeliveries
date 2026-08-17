@@ -9,6 +9,7 @@ import {
   Modal,
   TextInput,
   Animated,
+  Easing,
 } from 'react-native';
 import { PlatformMap } from '@/components/map/PlatformMap';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -48,6 +49,55 @@ import { getUserErrorMessage } from '@/utils/errorHandler';
 const STEPS = ['placed', 'confirmed', 'preparing', 'ready', 'picked_up', 'on_way', 'delivered'] as const;
 const STEP_LABELS = ['Placed', 'Confirmed', 'Preparing', 'Ready', 'Picked Up', 'On the Way', 'Delivered'];
 
+// Sonar-style expanding rings — two rings, staggered, looping forever. Used
+// under the customer marker while searching and around the driver marker
+// while its live location is active, echoing Uber/Bolt's live-map feel.
+function RadarRings({ color, size = 60 }: { color: string; size?: number }) {
+  const ring1 = useRef(new Animated.Value(0)).current;
+  const ring2 = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const make = (val: Animated.Value, delay: number) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(val, { toValue: 1, duration: 1800, easing: Easing.out(Easing.ease), useNativeDriver: true }),
+          Animated.timing(val, { toValue: 0, duration: 0, useNativeDriver: true }),
+        ]),
+      );
+    const loop1 = make(ring1, 0);
+    const loop2 = make(ring2, 900);
+    loop1.start();
+    loop2.start();
+    return () => {
+      loop1.stop();
+      loop2.stop();
+    };
+  }, [ring1, ring2]);
+
+  const ringStyle = (val: Animated.Value) => ({
+    position: 'absolute' as const,
+    top: '50%' as const,
+    left: '50%' as const,
+    marginTop: -size / 2,
+    marginLeft: -size / 2,
+    width: size,
+    height: size,
+    borderRadius: size / 2,
+    borderWidth: 2,
+    borderColor: color,
+    opacity: val.interpolate({ inputRange: [0, 1], outputRange: [0.5, 0] }),
+    transform: [{ scale: val.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1] }) }],
+  });
+
+  return (
+    <>
+      <Animated.View style={ringStyle(ring1)} />
+      <Animated.View style={ringStyle(ring2)} />
+    </>
+  );
+}
+
 export default function OrderTrackingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const orderId = String(id ?? '');
@@ -66,6 +116,18 @@ export default function OrderTrackingScreen() {
   const [cancelReason, setCancelReason] = useState<string | null>(null);
   const [cancelOtherText, setCancelOtherText] = useState('');
   const stepPulse = useRef(new Animated.Value(1)).current;
+
+  // ─── Animation refs ──────────────────────────────────────────────────────
+  // Staggered fade+slide entrance for the info cards, once real data is in.
+  const cardsIn = useRef(new Animated.Value(0)).current;
+  // Smooth gliding driver marker — lat/lng eased toward each new fix instead
+  // of snapping, the signature Uber-Eats-style live-map feel.
+  const driverAnimCoord = useRef(new Animated.ValueXY()).current;
+  const [smoothDriverCoords, setSmoothDriverCoords] = useState<Coordinates | null>(null);
+  const hasDriverCoordRef = useRef(false);
+  // Celebratory burst when the order flips to delivered.
+  const deliveredBurst = useRef(new Animated.Value(0)).current;
+  const deliveredFiredRef = useRef(false);
 
   const status = tracking?.status ?? order?.status ?? 'placed';
   const currentStepIndex = Math.max(0, STEPS.indexOf(status as typeof STEPS[number]));
@@ -181,6 +243,30 @@ export default function OrderTrackingScreen() {
     return hasValidCoordinates(coords) ? coords : null;
   }, [tracking?.driver]);
 
+  // Glide the driver marker smoothly toward each new GPS fix instead of
+  // snapping — jump straight there the first time we see the driver, then
+  // ease over subsequent updates.
+  useEffect(() => {
+    if (!driverCoords) return;
+    if (!hasDriverCoordRef.current) {
+      hasDriverCoordRef.current = true;
+      driverAnimCoord.setValue({ x: driverCoords.latitude, y: driverCoords.longitude });
+      setSmoothDriverCoords(driverCoords);
+      return;
+    }
+    Animated.timing(driverAnimCoord, {
+      toValue: { x: driverCoords.latitude, y: driverCoords.longitude },
+      duration: 2200,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: false,
+    }).start();
+  }, [driverCoords, driverAnimCoord]);
+
+  useEffect(() => {
+    const id = driverAnimCoord.addListener(({ x, y }) => setSmoothDriverCoords({ latitude: x, longitude: y }));
+    return () => driverAnimCoord.removeListener(id);
+  }, [driverAnimCoord]);
+
   const driverAccepted = tracking?.driverAccepted ?? Boolean(tracking?.driver?.id);
   const driverDistanceKm = useMemo(() => {
     if (tracking?.driverDistanceKm != null && Number.isFinite(tracking.driverDistanceKm)) {
@@ -236,18 +322,23 @@ export default function OrderTrackingScreen() {
             <View style={{ backgroundColor: T.action, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, marginBottom: 4 }}>
               <Text style={{ color: '#FFF', fontSize: 10, fontWeight: '800' }}>YOU</Text>
             </View>
-            <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: T.action, borderWidth: 3, borderColor: '#FFF' }} />
+            <View style={{ width: 18, height: 18, alignItems: 'center', justifyContent: 'center' }}>
+              {!driverAccepted && <RadarRings color={T.action} size={44} />}
+              <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: T.action, borderWidth: 3, borderColor: '#FFF' }} />
+            </View>
           </View>
         ),
       });
     }
-    if (driverCoords && driverAccepted) {
+    const driverMarkerCoords = smoothDriverCoords ?? driverCoords;
+    if (driverMarkerCoords && driverAccepted) {
       markers.push({
         id: 'driver',
-        latitude: driverCoords.latitude,
-        longitude: driverCoords.longitude,
+        latitude: driverMarkerCoords.latitude,
+        longitude: driverMarkerCoords.longitude,
         children: (
-          <View style={{ alignItems: 'center' }}>
+          <View style={{ alignItems: 'center', justifyContent: 'center', width: 60, height: 60 }}>
+            <RadarRings color={T.success} size={60} />
             <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: T.success, borderWidth: 3, borderColor: '#FFF', alignItems: 'center', justifyContent: 'center' }}>
               <Car size={18} color="#FFF" />
             </View>
@@ -256,7 +347,7 @@ export default function OrderTrackingScreen() {
       });
     }
     return markers;
-  }, [customerCoords, driverCoords, driverAccepted]);
+  }, [customerCoords, driverCoords, smoothDriverCoords, driverAccepted]);
 
   const isLoading = trackingLoading || orderLoading;
 
@@ -272,6 +363,37 @@ export default function OrderTrackingScreen() {
     const t = setTimeout(() => setShowColdStartHint(true), 4000);
     return () => clearTimeout(t);
   }, [isLoading]);
+
+  // Fade + slide the info cards in together once real data is ready.
+  useEffect(() => {
+    if (isLoading) return;
+    Animated.timing(cardsIn, { toValue: 1, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  }, [isLoading, cardsIn]);
+
+  // One-shot celebratory burst the moment the order flips to delivered.
+  useEffect(() => {
+    if (status === 'delivered' && !deliveredFiredRef.current) {
+      deliveredFiredRef.current = true;
+      deliveredBurst.setValue(0);
+      Animated.sequence([
+        Animated.spring(deliveredBurst, { toValue: 1, useNativeDriver: true, tension: 80, friction: 6 }),
+      ]).start();
+    }
+  }, [status, deliveredBurst]);
+
+  // Staggered entrance style for the Nth card — same driving value, offset ranges.
+  const cardEntrance = (index: number) => {
+    const start = index * 0.08;
+    const end = Math.min(1, start + 0.5);
+    return {
+      opacity: cardsIn.interpolate({ inputRange: [start, end], outputRange: [0, 1], extrapolate: 'clamp' }),
+      transform: [
+        {
+          translateY: cardsIn.interpolate({ inputRange: [start, end], outputRange: [16, 0], extrapolate: 'clamp' }),
+        },
+      ],
+    };
+  };
 
   return (
     <ScreenWrapper bg="white" edges={['bottom']}>
@@ -323,7 +445,23 @@ export default function OrderTrackingScreen() {
                 </Text>
               </View>
             )}
-            <View style={{ backgroundColor: T.surface, borderRadius: 16, padding: 18, borderWidth: 1, borderColor: T.border, marginBottom: 16 }}>
+            <Animated.View style={[{ backgroundColor: T.surface, borderRadius: 16, padding: 18, borderWidth: 1, borderColor: T.border, marginBottom: 16, overflow: 'hidden' }, cardEntrance(0)]}>
+              {status === 'delivered' && (
+                <Animated.View
+                  pointerEvents="none"
+                  style={{
+                    position: 'absolute',
+                    top: -30,
+                    right: -30,
+                    width: 120,
+                    height: 120,
+                    borderRadius: 60,
+                    backgroundColor: T.successBg,
+                    opacity: deliveredBurst.interpolate({ inputRange: [0, 1], outputRange: [0, 0.6] }),
+                    transform: [{ scale: deliveredBurst }],
+                  }}
+                />
+              )}
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <View style={{ flex: 1, paddingRight: 12 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
@@ -332,9 +470,17 @@ export default function OrderTrackingScreen() {
                       ESTIMATED ARRIVAL
                     </Text>
                   </View>
-                  <Text style={{ fontWeight: '900', fontSize: 34, color: T.text, lineHeight: 38 }}>
-                    {status === 'delivered' ? 'Delivered' : formatETA(etaMinutes)}
-                  </Text>
+                  <Animated.Text
+                    style={{
+                      fontWeight: '900',
+                      fontSize: 34,
+                      color: T.text,
+                      lineHeight: 38,
+                      transform: [{ scale: status === 'delivered' ? deliveredBurst.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] }) : 1 }],
+                    }}
+                  >
+                    {status === 'delivered' ? '🎉 Delivered' : formatETA(etaMinutes)}
+                  </Animated.Text>
                   <Text style={{ color: T.textSec, fontSize: 14, marginTop: 6, lineHeight: 20 }}>
                     {statusSubtitle(status, { driverAccepted, driverDistanceKm })}
                   </Text>
@@ -344,9 +490,9 @@ export default function OrderTrackingScreen() {
                   variant={status === 'delivered' ? 'success' : status === 'cancelled' ? 'danger' : 'outline'}
                 />
               </View>
-            </View>
+            </Animated.View>
 
-            <View style={{ backgroundColor: driverAccepted ? T.successBg : T.surface, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: driverAccepted ? T.success : T.border, marginBottom: 16 }}>
+            <Animated.View style={[{ backgroundColor: driverAccepted ? T.successBg : T.surface, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: driverAccepted ? T.success : T.border, marginBottom: 16 }, cardEntrance(1)]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: driverAccepted ? T.success : T.border, alignItems: 'center', justifyContent: 'center' }}>
                   {driverAccepted ? <UserCheck size={20} color="#FFF" /> : <Navigation size={20} color={T.textSec} />}
@@ -370,9 +516,9 @@ export default function OrderTrackingScreen() {
                   </Text>
                 </View>
               </View>
-            </View>
+            </Animated.View>
 
-            <View style={{ marginBottom: 16 }}>
+            <Animated.View style={[{ marginBottom: 16 }, cardEntrance(2)]}>
               {STEPS.map((step, i) => {
                 const done = i <= currentStepIndex;
                 const active = i === currentStepIndex && status !== 'delivered' && status !== 'cancelled';
@@ -416,9 +562,9 @@ export default function OrderTrackingScreen() {
                   </View>
                 );
               })}
-            </View>
+            </Animated.View>
 
-            <View style={{ backgroundColor: T.surface, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: T.border, marginBottom: 12 }}>
+            <Animated.View style={[{ backgroundColor: T.surface, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: T.border, marginBottom: 12 }, cardEntrance(3)]}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                 <Text style={{ fontWeight: '800', fontSize: 15, color: T.text }}>Delivery instructions</Text>
                 {canEditNotes && (
@@ -433,20 +579,20 @@ export default function OrderTrackingScreen() {
               <Text style={{ color: order?.deliveryNotes ? T.textSec : T.textTer, fontSize: 14, lineHeight: 20 }}>
                 {order?.deliveryNotes?.trim() || 'No instructions added yet. Tap Add to tell the driver about gate codes, buzzers, or drop-off preferences.'}
               </Text>
-            </View>
+            </Animated.View>
 
             {deliveryAddressLabel && (
-              <View style={{ backgroundColor: T.surface, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: T.border, marginBottom: 12, flexDirection: 'row', gap: 10 }}>
+              <Animated.View style={[{ backgroundColor: T.surface, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: T.border, marginBottom: 12, flexDirection: 'row', gap: 10 }, cardEntrance(4)]}>
                 <MapPin size={16} color={T.textSec} style={{ marginTop: 2 }} />
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontWeight: '800', fontSize: 14, color: T.text, marginBottom: 4 }}>Delivering to</Text>
                   <Text style={{ color: T.textSec, fontSize: 14, lineHeight: 20 }}>{deliveryAddressLabel}</Text>
                 </View>
-              </View>
+              </Animated.View>
             )}
 
             {tracking?.driver && (
-              <View style={{ backgroundColor: T.surface, borderRadius: 12, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: T.border, marginBottom: 12 }}>
+              <Animated.View style={[{ backgroundColor: T.surface, borderRadius: 12, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: T.border, marginBottom: 12 }, cardEntrance(5)]}>
                 <Avatar uri={tracking.driver.avatar} name={`${tracking.driver.firstName} ${tracking.driver.lastName}`} size={48} />
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontWeight: '700', fontSize: 15, color: T.text }}>
@@ -484,11 +630,11 @@ export default function OrderTrackingScreen() {
                     <Phone size={18} color="#FFF" />
                   </Pressable>
                 </View>
-              </View>
+              </Animated.View>
             )}
 
             {order && (
-              <View style={{ backgroundColor: T.surface, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: T.border, marginBottom: 16 }}>
+              <Animated.View style={[{ backgroundColor: T.surface, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: T.border, marginBottom: 16 }, cardEntrance(6)]}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
                   <Text style={{ fontWeight: '800', fontSize: 14, color: T.text }}>
                     {order.restaurantName || 'Your order'}
@@ -532,7 +678,7 @@ export default function OrderTrackingScreen() {
                   <Text style={{ color: T.text, fontWeight: '800', fontSize: 14 }}>Total</Text>
                   <Text style={{ color: T.text, fontWeight: '800', fontSize: 14 }}>{formatPrice(order.total)}</Text>
                 </View>
-              </View>
+              </Animated.View>
             )}
 
             {canCancel && (
