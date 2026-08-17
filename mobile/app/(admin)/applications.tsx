@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert, Modal, TextInput, Linking } from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert, Modal, TextInput, Linking, Image } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle, XCircle, ChevronRight, Car, Building2, CreditCard, X } from 'lucide-react-native';
+import { CheckCircle, XCircle, ChevronRight, Car, Building2, CreditCard, X, FileText } from 'lucide-react-native';
 import { adminService, Application } from '@/services/admin.service';
 import { Colors } from '@/constants/colors';
 import { getUserErrorMessage } from '@/utils/errorHandler';
 
 const TABS: Array<'pending' | 'approved' | 'rejected'> = ['pending', 'approved', 'rejected'];
 const TAB_COLORS = { pending: '#f97316', approved: '#4ade80', rejected: '#ef4444' };
+const IMAGE_URL_RE = /\.(jpe?g|png|webp|heic|gif)$/i;
 
 function DocLink({ label, url }: { label: string; url?: string }) {
   if (!url) return null;
@@ -15,6 +16,34 @@ function DocLink({ label, url }: { label: string; url?: string }) {
     <Pressable onPress={() => Linking.openURL(url)} style={{ paddingVertical: 6 }}>
       <Text style={{ color: Colors.gold[500], fontSize: 13, fontWeight: '600' }}>{label} ↗</Text>
     </Pressable>
+  );
+}
+
+// Shows an image document as a tappable thumbnail (opens full-screen via
+// onPreview) so admins can actually judge document clarity/legibility instead
+// of just following a raw link out of the app. Non-image uploads (PDF/Word)
+// fall back to the plain external-link pattern.
+function DocPreview({ label, url, onPreview }: { label: string; url?: string; onPreview: (url: string) => void }) {
+  if (!url) return null;
+  if (!IMAGE_URL_RE.test(url)) return <DocLink label={label} url={url} />;
+  return (
+    <Pressable onPress={() => onPreview(url)} style={{ marginBottom: 12 }}>
+      <Text style={{ color: '#aaa', fontSize: 12, fontWeight: '600', marginBottom: 6 }}>{label}</Text>
+      <Image source={{ uri: url }} style={{ width: '100%', height: 160, borderRadius: 10, backgroundColor: '#111' }} resizeMode="cover" />
+    </Pressable>
+  );
+}
+
+function ImageViewerModal({ url, onClose }: { url: string | null; onClose: () => void }) {
+  return (
+    <Modal visible={!!url} transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+        {url && <Image source={{ uri: url }} style={{ width: '100%', height: '80%' }} resizeMode="contain" />}
+        <Pressable onPress={onClose} style={{ position: 'absolute', top: 56, right: 20, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20, padding: 8 }}>
+          <X size={22} color="#fff" />
+        </Pressable>
+      </Pressable>
+    </Modal>
   );
 }
 
@@ -35,8 +64,10 @@ function ApplicationDetail({ app, onClose, onApprove, onReject, loading }: {
   onReject: () => void;
   loading: boolean;
 }) {
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   return (
     <View style={{ flex: 1, backgroundColor: Colors.empire.black }}>
+      <ImageViewerModal url={previewUrl} onClose={() => setPreviewUrl(null)} />
       <View style={{ paddingTop: 56, paddingHorizontal: 24, paddingBottom: 20, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: Colors.empire.charcoal }}>
         <Pressable onPress={onClose} hitSlop={8} style={{ marginRight: 16 }}>
           <X size={22} color="#fff" />
@@ -60,14 +91,16 @@ function ApplicationDetail({ app, onClose, onApprove, onReject, loading }: {
           {app.rejectionReason && <DetailRow label="Rejection Reason" value={app.rejectionReason} />}
         </View>
 
-        {(app.idDocumentUrl || app.driversLicenseUrl || app.vehicleRegistrationUrl || app.businessDocUrl) && (
+        {(app.idDocumentUrl || app.driversLicenseUrl || app.vehicleRegistrationUrl || app.vehiclePhotoUrl || app.licensePlatePhotoUrl || app.businessDocUrl) && (
           <>
             <Text style={{ color: Colors.gold[500], fontWeight: '800', fontSize: 11, letterSpacing: 1.5, marginBottom: 10, marginTop: 8 }}>DOCUMENTS</Text>
             <View style={{ backgroundColor: Colors.empire.charcoal, borderRadius: 14, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#2a2a2a' }}>
-              <DocLink label="ID document" url={app.idDocumentUrl} />
-              <DocLink label="Driver's license" url={app.driversLicenseUrl} />
-              <DocLink label="Vehicle registration" url={app.vehicleRegistrationUrl} />
-              <DocLink label="Business document" url={app.businessDocUrl} />
+              <DocPreview label="ID document" url={app.idDocumentUrl} onPreview={setPreviewUrl} />
+              <DocPreview label="Driver's license" url={app.driversLicenseUrl} onPreview={setPreviewUrl} />
+              <DocPreview label="Vehicle registration" url={app.vehicleRegistrationUrl} onPreview={setPreviewUrl} />
+              <DocPreview label="Vehicle photo" url={app.vehiclePhotoUrl} onPreview={setPreviewUrl} />
+              <DocPreview label="License plate photo" url={app.licensePlatePhotoUrl} onPreview={setPreviewUrl} />
+              <DocPreview label="Business document" url={app.businessDocUrl} onPreview={setPreviewUrl} />
             </View>
           </>
         )}
@@ -81,8 +114,15 @@ function ApplicationDetail({ app, onClose, onApprove, onReject, loading }: {
               <DetailRow label="Model" value={app.vehicleModel} />
               <DetailRow label="Year" value={app.vehicleYear} />
               <DetailRow label="Reg Number" value={app.vehicleReg} />
+              <DetailRow label="Colour" value={app.vehicleColour} />
               <DetailRow label="ID Number" value={app.idNumber} />
               <DetailRow label="Date of Birth" value={app.dateOfBirth} />
+              <DetailRow label="Experience" value={app.yearsExperience != null ? `${app.yearsExperience} years` : undefined} />
+              <DetailRow label="PrDP Number" value={app.prdpNumber} />
+              <DetailRow label="PrDP Expiry" value={app.prdpExpiry} />
+              <DetailRow label="Emergency Contact" value={app.emergencyContactName} />
+              <DetailRow label="Emergency Phone" value={app.emergencyContactPhone} />
+              <DetailRow label="Background Check Consent" value={app.criminalRecordConsent ? 'Given' : 'Not given'} />
             </View>
           </>
         )}
@@ -105,6 +145,7 @@ function ApplicationDetail({ app, onClose, onApprove, onReject, loading }: {
           <DetailRow label="Bank" value={app.bankName} />
           <DetailRow label="Account No" value={app.bankAccountNo ? '•••• ' + app.bankAccountNo.slice(-4) : undefined} />
           <DetailRow label="Holder" value={app.bankHolder} />
+          <DetailRow label="Account Type" value={app.bankAccountType} />
         </View>
 
         {app.status === 'pending' && !app.incompleteSignup && (

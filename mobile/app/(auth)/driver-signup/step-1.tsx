@@ -36,13 +36,16 @@ function StepHeader({ current, total, title }: { current: number; total: number;
 }
 
 export default function DriverStep1() {
-  const { user } = useAuthStore();
+  const { user, updateUser } = useAuthStore();
   const { showToast } = useUIStore();
 
   const [fullName, setFullName] = useState(
     user ? `${(user as any).firstName ?? ''} ${(user as any).lastName ?? ''}`.trim() : '',
   );
   const [idNumber, setIdNumber] = useState('');
+  const [yearsExperience, setYearsExperience] = useState('');
+  const [prdpNumber, setPrdpNumber] = useState('');
+  const [prdpExpiry, setPrdpExpiry] = useState('');
   const [phone, setPhone] = useState(user?.phone ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
   const [password, setPassword] = useState('');
@@ -51,6 +54,25 @@ export default function DriverStep1() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const isLoggedIn = !!user;
+
+  const syncRoleMutation = useMutation({
+    mutationFn: () => authService.syncRole('driver'),
+    onSuccess: () => {
+      updateUser({ role: 'driver' } as any);
+      router.push({
+        pathname: '/(auth)/driver-signup/step-2',
+        params: {
+          fullName: fullName.trim(),
+          idNumber: idNumber.trim(),
+          phone: normalizeSAPhone(phone),
+          yearsExperience: yearsExperience.trim(),
+          prdpNumber: prdpNumber.trim(),
+          prdpExpiry: prdpExpiry.trim(),
+        },
+      });
+    },
+    onError: (error) => showToast(getUserErrorMessage(error), 'error'),
+  });
 
   const registerMutation = useMutation({
     mutationFn: () => {
@@ -81,6 +103,9 @@ export default function DriverStep1() {
           nextRoute: '/(auth)/driver-signup/step-2',
           fullName: fullName.trim(),
           idNumber: idNumber.trim(),
+          yearsExperience: yearsExperience.trim(),
+          prdpNumber: prdpNumber.trim(),
+          prdpExpiry: prdpExpiry.trim(),
         },
       });
     },
@@ -103,6 +128,15 @@ export default function DriverStep1() {
     if (!fullName.trim()) e.fullName = 'Full name is required';
     if (!idNumber.trim() || idNumber.replace(/\D/g, '').length !== 13)
       e.idNumber = 'Please enter a valid 13-digit SA ID number';
+    const years = parseInt(yearsExperience, 10);
+    if (!yearsExperience.trim() || isNaN(years) || years < 0 || years > 70)
+      e.yearsExperience = 'Please enter your years of driving experience';
+    if (!prdpNumber.trim()) e.prdpNumber = 'PrDP number is required for paid passenger/goods transport';
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(prdpExpiry.trim())) {
+      e.prdpExpiry = 'Enter the expiry date as YYYY-MM-DD';
+    } else if (new Date(prdpExpiry.trim()) <= new Date()) {
+      e.prdpExpiry = 'Your PrDP must not be expired';
+    }
     if (!isLoggedIn) {
       if (!isValidEmail(email)) e.email = 'Please enter a valid email address';
       if (!isValidSAPhone(phone)) e.phone = 'Please enter a valid South African phone number';
@@ -118,10 +152,7 @@ export default function DriverStep1() {
   const handleNext = () => {
     if (!validate()) return;
     if (isLoggedIn) {
-      router.push({
-        pathname: '/(auth)/driver-signup/step-2',
-        params: { fullName: fullName.trim(), idNumber: idNumber.trim(), phone: normalizeSAPhone(phone) },
-      });
+      syncRoleMutation.mutate();
     } else {
       registerMutation.mutate();
     }
@@ -168,6 +199,32 @@ export default function DriverStep1() {
           error={errors.phone}
         />
 
+        <Input
+          label="Years of Driving Experience"
+          value={yearsExperience}
+          onChangeText={setYearsExperience}
+          keyboardType="number-pad"
+          placeholder="e.g. 5"
+          error={errors.yearsExperience}
+        />
+
+        <Input
+          label="PrDP Number"
+          value={prdpNumber}
+          onChangeText={setPrdpNumber}
+          autoCapitalize="characters"
+          placeholder="Professional Driving Permit number"
+          error={errors.prdpNumber}
+        />
+
+        <Input
+          label="PrDP Expiry Date"
+          value={prdpExpiry}
+          onChangeText={setPrdpExpiry}
+          placeholder="YYYY-MM-DD"
+          error={errors.prdpExpiry}
+        />
+
         {!isLoggedIn && (
           <>
             <Input
@@ -207,7 +264,7 @@ export default function DriverStep1() {
         )}
 
         <View style={{ marginTop: 8 }}>
-          <Button onPress={handleNext} loading={registerMutation.isPending} size="lg">
+          <Button onPress={handleNext} loading={registerMutation.isPending || syncRoleMutation.isPending} size="lg">
             Next
           </Button>
         </View>

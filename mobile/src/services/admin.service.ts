@@ -24,6 +24,8 @@ export interface Application {
   idDocumentUrl?: string;
   driversLicenseUrl?: string;
   vehicleRegistrationUrl?: string;
+  vehiclePhotoUrl?: string;
+  licensePlatePhotoUrl?: string;
   businessDocUrl?: string;
   // driver-specific
   vehicleType?: string;
@@ -31,11 +33,19 @@ export interface Application {
   vehicleModel?: string;
   vehicleYear?: number;
   vehicleReg?: string;
+  vehicleColour?: string;
   idNumber?: string;
   dateOfBirth?: string;
+  yearsExperience?: number;
+  prdpNumber?: string;
+  prdpExpiry?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  criminalRecordConsent?: boolean;
   bankName?: string;
   bankAccountNo?: string;
   bankHolder?: string;
+  bankAccountType?: string;
   // restaurant-specific
   tradingName?: string;
   businessRegNo?: string;
@@ -120,18 +130,28 @@ export const applicationsService = {
   async submitDriverApplication(data: {
     idNumber?: string;
     dateOfBirth?: string;
+    yearsExperience?: string;
+    prdpNumber?: string;
+    prdpExpiry?: string;
     vehicleType?: string;
     vehicleMake?: string;
     vehicleModel?: string;
     vehicleYear?: string;
     vehicleReg?: string;
+    vehicleColour?: string;
     bankName?: string;
     bankAccountNo?: string;
     bankHolder?: string;
     bankBranch?: string;
+    bankAccountType?: string;
+    emergencyContactName?: string;
+    emergencyContactPhone?: string;
+    criminalRecordConsent?: boolean;
     idDocumentUrl?: string;
     driversLicenseUrl?: string;
     vehicleRegistrationUrl?: string;
+    vehiclePhotoUrl?: string;
+    licensePlatePhotoUrl?: string;
   }) {
     await api.post('/applications/driver', data);
   },

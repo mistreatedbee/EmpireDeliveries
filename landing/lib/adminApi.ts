@@ -65,17 +65,27 @@ export interface Application {
   idDocumentUrl?: string
   driversLicenseUrl?: string
   vehicleRegistrationUrl?: string
+  vehiclePhotoUrl?: string
+  licensePlatePhotoUrl?: string
   businessDocUrl?: string
   vehicleType?: string
   vehicleMake?: string
   vehicleModel?: string
   vehicleYear?: number
   vehicleReg?: string
+  vehicleColour?: string
   idNumber?: string
   dateOfBirth?: string
+  yearsExperience?: number
+  prdpNumber?: string
+  prdpExpiry?: string
+  emergencyContactName?: string
+  emergencyContactPhone?: string
+  criminalRecordConsent?: boolean
   bankName?: string
   bankAccountNo?: string
   bankHolder?: string
+  bankAccountType?: string
   tradingName?: string
   businessRegNo?: string
   cuisineType?: string

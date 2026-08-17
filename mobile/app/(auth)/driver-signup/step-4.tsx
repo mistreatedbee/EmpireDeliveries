@@ -8,7 +8,7 @@ import {
   Image,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, CheckCircle, Upload, FileText } from 'lucide-react-native';
+import { ArrowLeft, CheckCircle, Upload, FileText, Square, CheckSquare } from 'lucide-react-native';
 import { useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/empire';
 import { applicationsService } from '@/services/admin.service';
@@ -43,15 +43,17 @@ function StepHeader({ current, total, title }: { current: number; total: number;
 }
 
 interface DocSlot {
-  key: 'idDocument' | 'driversLicense' | 'vehicleRegistration';
+  key: 'idDocument' | 'driversLicense' | 'vehicleRegistration' | 'vehiclePhoto' | 'licensePlatePhoto';
   label: string;
   hint: string;
 }
 
 const DOC_SLOTS: DocSlot[] = [
-  { key: 'idDocument', label: 'ID Document', hint: 'South African ID or passport' },
-  { key: 'driversLicense', label: "Driver's License", hint: 'Front side clearly visible' },
-  { key: 'vehicleRegistration', label: 'Vehicle Registration', hint: 'Current registration disc or paper' },
+  { key: 'idDocument', label: 'ID Document', hint: 'South African ID or passport — all 4 corners visible, no glare or blur' },
+  { key: 'driversLicense', label: "Driver's License", hint: 'Front side clearly visible, text must be readable' },
+  { key: 'vehicleRegistration', label: 'Vehicle Registration', hint: 'Current registration disc or paper, clearly legible' },
+  { key: 'vehiclePhoto', label: 'Vehicle Photo', hint: 'Clear photo of your vehicle, taken in good light' },
+  { key: 'licensePlatePhoto', label: 'License Plate Photo', hint: 'Close-up of your number plate, characters clearly readable' },
 ];
 
 export default function DriverStep4() {
@@ -63,12 +65,17 @@ export default function DriverStep4() {
     idDocument: null,
     driversLicense: null,
     vehicleRegistration: null,
+    vehiclePhoto: null,
+    licensePlatePhoto: null,
   });
   const [uploading, setUploading] = useState<Record<string, boolean>>({
     idDocument: false,
     driversLicense: false,
     vehicleRegistration: false,
+    vehiclePhoto: false,
+    licensePlatePhoto: false,
   });
+  const [consentGiven, setConsentGiven] = useState(false);
 
   const allUploaded = DOC_SLOTS.every((s) => docs[s.key]?.remoteUrl);
 
@@ -92,18 +99,30 @@ export default function DriverStep4() {
       if (!token) throw new Error('Session expired. Please log in again.');
       return applicationsService.submitDriverApplication({
         idNumber: params.idNumber,
+        yearsExperience: params.yearsExperience,
+        prdpNumber: params.prdpNumber,
+        prdpExpiry: params.prdpExpiry,
         vehicleType: params.vehicleType,
         vehicleMake: params.vehicleMake,
         vehicleModel: params.vehicleModel,
         vehicleYear: params.vehicleYear,
         vehicleReg: params.vehicleReg,
+        vehicleColour: params.vehicleColour,
         bankName: params.bankName,
         bankAccountNo: params.bankAccountNo,
         bankHolder: params.bankHolder,
+        bankAccountType: params.accountType,
+        emergencyContactName: params.emergencyContactName,
+        emergencyContactPhone: params.emergencyContactPhone,
+        criminalRecordConsent: consentGiven,
         ...(docs.idDocument?.remoteUrl ? { idDocumentUrl: docs.idDocument.remoteUrl } : {}),
         ...(docs.driversLicense?.remoteUrl ? { driversLicenseUrl: docs.driversLicense.remoteUrl } : {}),
         ...(docs.vehicleRegistration?.remoteUrl
           ? { vehicleRegistrationUrl: docs.vehicleRegistration.remoteUrl }
+          : {}),
+        ...(docs.vehiclePhoto?.remoteUrl ? { vehiclePhotoUrl: docs.vehiclePhoto.remoteUrl } : {}),
+        ...(docs.licensePlatePhoto?.remoteUrl
+          ? { licensePlatePhotoUrl: docs.licensePlatePhoto.remoteUrl }
           : {}),
       });
     },
@@ -114,6 +133,10 @@ export default function DriverStep4() {
   const handleSubmit = () => {
     if (!allUploaded) {
       showToast('Please upload all required documents before submitting.', 'error');
+      return;
+    }
+    if (!consentGiven) {
+      showToast('Please consent to the background check before submitting.', 'error');
       return;
     }
     if (!token) {
@@ -129,7 +152,9 @@ export default function DriverStep4() {
       <StepHeader current={4} total={4} title="Document Upload" />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 80 }}>
         <Text style={{ fontFamily: Fonts.body, color: T.textSec, fontSize: 14, marginBottom: 28 }}>
-          Upload a clear photo or PDF of each required document to complete your application.
+          Upload a clear photo or PDF of each document below. Make sure lighting is good, all
+          text is in focus, and nothing is cropped out — blurry or partial documents will delay
+          your approval.
         </Text>
 
         {DOC_SLOTS.map(({ key, label, hint }) => {
@@ -223,14 +248,38 @@ export default function DriverStep4() {
 
         {!allUploaded && (
           <Text style={{ fontFamily: Fonts.body, color: T.textTer, fontSize: 12, textAlign: 'center', marginBottom: 16 }}>
-            All 3 documents must be uploaded before submitting.
+            All {DOC_SLOTS.length} documents must be uploaded before submitting.
           </Text>
         )}
+
+        <Pressable
+          onPress={() => setConsentGiven((c) => !c)}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            gap: 10,
+            backgroundColor: T.surface,
+            borderRadius: 14,
+            borderWidth: 1.5,
+            borderColor: consentGiven ? T.gold : T.border,
+            padding: 14,
+            marginBottom: 16,
+          }}
+        >
+          {consentGiven ? (
+            <CheckSquare size={20} color={T.gold} />
+          ) : (
+            <Square size={20} color={T.textTer} />
+          )}
+          <Text style={{ flex: 1, fontFamily: Fonts.body, color: T.textSec, fontSize: 13, lineHeight: 19 }}>
+            I consent to a criminal record and background check as part of my driver application.
+          </Text>
+        </Pressable>
 
         <Button
           onPress={handleSubmit}
           loading={submitMutation.isPending}
-          disabled={!allUploaded}
+          disabled={!allUploaded || !consentGiven}
           size="lg"
           style={{ marginTop: 8 }}
         >

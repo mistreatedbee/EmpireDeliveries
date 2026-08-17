@@ -144,4 +144,14 @@ export const authService = {
       headers: { Authorization: `Bearer ${token}` },
     });
   },
+
+  // Upgrade an already-authenticated user's role (e.g. an existing customer
+  // starting the driver-signup flow while logged in). /auth/sync only ever
+  // creates a new user or returns an existing one unchanged — it never updates
+  // role — so this hits the dedicated POST /auth/role endpoint instead.
+  async syncRole(role: string): Promise<User> {
+    const { default: api } = await import('./api');
+    const res = await api.post<never, any>('/auth/role', { role });
+    return res.data ?? res;
+  },
 };

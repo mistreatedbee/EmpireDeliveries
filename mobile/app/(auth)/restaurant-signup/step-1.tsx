@@ -97,12 +97,20 @@ export default function RestaurantStep1() {
   const handleNext = async () => {
     if (!validate()) return;
 
+    setLoading(true);
+
     if (isLoggedIn) {
-      router.push({ pathname: '/(auth)/restaurant-signup/step-2', params: businessParams() });
+      try {
+        await authService.syncRole('restaurant');
+        router.push({ pathname: '/(auth)/restaurant-signup/step-2', params: businessParams() });
+      } catch (error) {
+        showToast(getUserErrorMessage(error), 'error');
+      } finally {
+        setLoading(false);
+      }
       return;
     }
 
-    setLoading(true);
     try {
       await authService.register({
         firstName: firstName.trim(),

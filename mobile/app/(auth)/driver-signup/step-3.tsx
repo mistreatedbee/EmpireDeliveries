@@ -3,6 +3,7 @@ import { View, Text, ScrollView, Pressable, KeyboardAvoidingView, Platform } fro
 import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
 import { Input, Button } from '@/components/empire';
+import { isValidSAPhone } from '@/utils/validators';
 import { T, Fonts } from '@/constants/colors';
 
 const BANKS = ['FNB', 'Nedbank', 'ABSA', 'Standard Bank', 'Capitec', 'TymeBank'] as const;
@@ -39,6 +40,8 @@ export default function DriverStep3() {
   const [accountHolder, setAccountHolder] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [accountType, setAccountType] = useState<string>('Cheque');
+  const [emergencyContactName, setEmergencyContactName] = useState('');
+  const [emergencyContactPhone, setEmergencyContactPhone] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validate = () => {
@@ -46,6 +49,9 @@ export default function DriverStep3() {
     if (!bankName) e.bankName = 'Please select a bank';
     if (!accountHolder.trim()) e.accountHolder = 'Account holder name is required';
     if (!accountNumber.trim()) e.accountNumber = 'Account number is required';
+    if (!emergencyContactName.trim()) e.emergencyContactName = 'Emergency contact name is required';
+    if (!isValidSAPhone(emergencyContactPhone))
+      e.emergencyContactPhone = 'Please enter a valid South African phone number';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -60,6 +66,8 @@ export default function DriverStep3() {
         bankHolder: accountHolder.trim(),
         bankAccountNo: accountNumber.trim(),
         accountType,
+        emergencyContactName: emergencyContactName.trim(),
+        emergencyContactPhone: emergencyContactPhone.trim(),
       },
     });
   };
@@ -151,6 +159,26 @@ export default function DriverStep3() {
             </Pressable>
           ))}
         </View>
+
+        <Text style={{ fontFamily: Fonts.bodyBold, color: T.textTer, fontSize: 12, marginBottom: 10, marginTop: 8, letterSpacing: 0.5 }}>
+          EMERGENCY CONTACT
+        </Text>
+        <Input
+          label="Contact Name"
+          value={emergencyContactName}
+          onChangeText={setEmergencyContactName}
+          autoCapitalize="words"
+          placeholder="Full name"
+          error={errors.emergencyContactName}
+        />
+        <Input
+          label="Contact Phone"
+          value={emergencyContactPhone}
+          onChangeText={setEmergencyContactPhone}
+          keyboardType="phone-pad"
+          placeholder="+27 8X XXX XXXX"
+          error={errors.emergencyContactPhone}
+        />
 
         <View style={{ marginTop: 8 }}>
           <Button onPress={handleNext} size="lg">

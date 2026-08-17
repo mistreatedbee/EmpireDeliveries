@@ -18,6 +18,23 @@ function DocLink({ label, url }: { label: string; url?: string }) {
   )
 }
 
+const IMAGE_URL_RE = /\.(jpe?g|png|webp|heic|gif)$/i
+
+// Shows image documents as a clickable thumbnail (opens the full-size image in
+// a new tab) so admins can actually judge clarity/legibility inline, instead
+// of only a bare link. Non-image uploads (PDF/Word) fall back to DocLink.
+function DocPreview({ label, url }: { label: string; url?: string }) {
+  if (!url) return null
+  if (!IMAGE_URL_RE.test(url)) return <DocLink label={label} url={url} />
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer" className="block">
+      <p className="mb-1 text-xs text-muted-foreground">{label}</p>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={url} alt={label} className="h-32 w-full rounded-lg border border-border object-cover" />
+    </a>
+  )
+}
+
 function ApplicationDetail({ app }: { app: Application }) {
   const fields: Array<[string, string | number | undefined]> =
     app.applicationType === "driver"
@@ -25,11 +42,19 @@ function ApplicationDetail({ app }: { app: Application }) {
           ["Vehicle type", app.vehicleType],
           ["Vehicle", `${app.vehicleMake ?? ""} ${app.vehicleModel ?? ""} ${app.vehicleYear ?? ""}`.trim()],
           ["Registration", app.vehicleReg],
+          ["Colour", app.vehicleColour],
           ["ID number", app.idNumber],
           ["Date of birth", app.dateOfBirth],
+          ["Experience", app.yearsExperience != null ? `${app.yearsExperience} years` : undefined],
+          ["PrDP number", app.prdpNumber],
+          ["PrDP expiry", app.prdpExpiry],
+          ["Emergency contact", app.emergencyContactName],
+          ["Emergency phone", app.emergencyContactPhone],
+          ["Background check consent", app.criminalRecordConsent ? "Given" : "Not given"],
           ["Bank", app.bankName],
           ["Account no.", app.bankAccountNo],
           ["Account holder", app.bankHolder],
+          ["Account type", app.bankAccountType],
         ]
       : [
           ["Trading name", app.tradingName],
@@ -55,12 +80,14 @@ function ApplicationDetail({ app }: { app: Application }) {
           <p className="text-foreground">{app.rejectionReason}</p>
         </div>
       )}
-      {(app.idDocumentUrl || app.driversLicenseUrl || app.vehicleRegistrationUrl || app.businessDocUrl) && (
-        <div className="col-span-full flex flex-wrap gap-3 pt-2">
-          <DocLink label="ID document" url={app.idDocumentUrl} />
-          <DocLink label="Driver's license" url={app.driversLicenseUrl} />
-          <DocLink label="Vehicle registration" url={app.vehicleRegistrationUrl} />
-          <DocLink label="Business document" url={app.businessDocUrl} />
+      {(app.idDocumentUrl || app.driversLicenseUrl || app.vehicleRegistrationUrl || app.vehiclePhotoUrl || app.licensePlatePhotoUrl || app.businessDocUrl) && (
+        <div className="col-span-full grid grid-cols-2 gap-3 pt-2 sm:grid-cols-3 md:grid-cols-5">
+          <DocPreview label="ID document" url={app.idDocumentUrl} />
+          <DocPreview label="Driver's license" url={app.driversLicenseUrl} />
+          <DocPreview label="Vehicle registration" url={app.vehicleRegistrationUrl} />
+          <DocPreview label="Vehicle photo" url={app.vehiclePhotoUrl} />
+          <DocPreview label="License plate photo" url={app.licensePlatePhotoUrl} />
+          <DocPreview label="Business document" url={app.businessDocUrl} />
         </div>
       )}
     </div>
