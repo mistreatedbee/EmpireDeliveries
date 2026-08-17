@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert, Image, Linking } from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert, Image, Linking, Platform } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Store, Home, Navigation, Phone, MessageCircle, CheckCircle, Package, Camera } from 'lucide-react-native';
@@ -42,6 +42,16 @@ export default function ActiveDelivery() {
     enabled: step !== 'complete',
   });
 
+  // The relevant destination for the current leg — restaurant while heading
+  // to pickup, customer while heading to delivery.
+  const destCoords = step === 'pickup'
+    ? (delivery?.restaurantLat != null && delivery?.restaurantLng != null
+        ? { latitude: delivery.restaurantLat, longitude: delivery.restaurantLng }
+        : null)
+    : (delivery?.destLat != null && delivery?.destLng != null
+        ? { latitude: delivery.destLat, longitude: delivery.destLng }
+        : null);
+
   useEffect(() => {
     if (!delivery?.status) return;
     if (delivery.status === 'on_way' || delivery.status === 'picked_up') {
@@ -77,6 +87,20 @@ export default function ActiveDelivery() {
     onError: () => Alert.alert('Error', 'Could not confirm delivery. Please try again.'),
   });
 
+  const openDirections = () => {
+    if (!destCoords) return;
+    const { latitude, longitude } = destCoords;
+    const label = step === 'pickup' ? (delivery?.restaurantName ?? 'Restaurant') : (delivery?.customerName ?? 'Customer');
+    const url = Platform.select({
+      ios: `maps://?daddr=${latitude},${longitude}&dirflg=d`,
+      android: `google.navigation:q=${latitude},${longitude}&mode=d`,
+      default: `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`,
+    });
+    Linking.openURL(url!).catch(() => {
+      Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}&destination_place_id=${encodeURIComponent(label)}`);
+    });
+  };
+
   const handleTakePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
@@ -92,6 +116,35 @@ export default function ActiveDelivery() {
     );
     if (manipulated.base64) setDeliveryPhoto(manipulated.base64);
   };
+
+  // Bounding region that keeps the driver's own position AND the relevant
+  // destination both on-screen — previously the map only ever centered on
+  // the driver's own GPS at a fixed tight zoom, so the destination marker
+  // was frequently plotted off-screen and effectively invisible.
+  const mapRegion = useMemo(() => {
+    const points = [
+      ...(currentLocation ? [currentLocation] : []),
+      ...(destCoords ? [destCoords] : []),
+    ];
+    if (points.length === 0) {
+      return { latitude: -26.2041, longitude: 28.0473, latitudeDelta: 0.05, longitudeDelta: 0.05 };
+    }
+    if (points.length === 1) {
+      return { ...points[0], latitudeDelta: 0.04, longitudeDelta: 0.04 };
+    }
+    const lats = points.map((p) => p.latitude);
+    const lngs = points.map((p) => p.longitude);
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    const minLng = Math.min(...lngs);
+    const maxLng = Math.max(...lngs);
+    return {
+      latitude: (minLat + maxLat) / 2,
+      longitude: (minLng + maxLng) / 2,
+      latitudeDelta: Math.max(0.04, (maxLat - minLat) * 1.8),
+      longitudeDelta: Math.max(0.04, (maxLng - minLng) * 1.8),
+    };
+  }, [currentLocation, destCoords]);
 
   if (step === 'complete') {
     return (
@@ -129,12 +182,7 @@ export default function ActiveDelivery() {
       <View style={{ height: 260, position: 'relative' }}>
         <PlatformMap
           style={{ flex: 1 }}
-          region={{
-            latitude: currentLocation?.latitude ?? -26.2041,
-            longitude: currentLocation?.longitude ?? 28.0473,
-            latitudeDelta: 0.04,
-            longitudeDelta: 0.04,
-          }}
+          region={mapRegion}
           markers={[
             ...(currentLocation
               ? [
@@ -218,9 +266,13 @@ export default function ActiveDelivery() {
               </Text>
             </View>
           </View>
-          <View style={{ width: 44, height: 44, backgroundColor: Colors.empire.black, borderRadius: 14, alignItems: 'center', justifyContent: 'center' }}>
+          <Pressable
+            onPress={openDirections}
+            disabled={!destCoords}
+            style={{ width: 44, height: 44, backgroundColor: Colors.empire.black, borderRadius: 14, alignItems: 'center', justifyContent: 'center', opacity: destCoords ? 1 : 0.4 }}
+          >
             <Navigation size={18} color="#fff" />
-          </View>
+          </Pressable>
         </View>
 
         {step === 'pickup' ? (
