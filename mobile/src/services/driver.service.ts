@@ -127,9 +127,11 @@ export const driverService = {
     return res.data;
   },
 
-  async getAvailableDelivery(): Promise<AvailableDelivery | null> {
-    const res = await api.get<never, ApiResponse<AvailableDelivery | null>>('/drivers/deliveries/available');
-    return res.data;
+  async getAvailableDeliveries(): Promise<AvailableDelivery[]> {
+    const res = await api.get<never, ApiResponse<AvailableDelivery[] | AvailableDelivery>>('/drivers/deliveries/available');
+    const data = res.data;
+    if (!data) return [];
+    return Array.isArray(data) ? data : [data];
   },
 
   async getActiveDelivery(): Promise<ActiveDelivery | null> {

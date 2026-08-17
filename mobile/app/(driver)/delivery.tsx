@@ -36,11 +36,20 @@ export default function ActiveDelivery() {
     return () => { sub?.remove(); };
   }, [step]);
 
-  const { data: delivery, isLoading } = useQuery({
+  const { data: delivery, isLoading, isError, refetch } = useQuery({
     queryKey: ['driver', 'active'],
     queryFn: driverService.getActiveDelivery,
     enabled: step !== 'complete',
+    refetchInterval: step !== 'complete' ? 3000 : false,
+    retry: 4,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
   });
+
+  useEffect(() => {
+    setStep('pickup');
+    setCompletedPayout(0);
+    setDeliveryPhoto(null);
+  }, [orderId]);
 
   // The relevant destination for the current leg — restaurant while heading
   // to pickup, customer while heading to delivery.
@@ -56,8 +65,10 @@ export default function ActiveDelivery() {
     if (!delivery?.status) return;
     if (delivery.status === 'on_way' || delivery.status === 'picked_up') {
       setStep('deliver');
+    } else {
+      setStep('pickup');
     }
-  }, [delivery?.status]);
+  }, [delivery?.status, delivery?.orderId]);
 
   const activeOrderId = orderId ?? delivery?.orderId;
   const { data: customerConversation } = useOrderConversation(activeOrderId, 'customer_driver');
@@ -172,6 +183,32 @@ export default function ActiveDelivery() {
     return (
       <View style={{ flex: 1, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator size="large" color={Colors.gold[500]} />
+        <Text style={{ color: '#888', marginTop: 12 }}>Loading delivery details…</Text>
+      </View>
+    );
+  }
+
+  if (isError || (!delivery && !isLoading)) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+        <Text style={{ fontWeight: '800', fontSize: 18, color: Colors.empire.black, textAlign: 'center' }}>
+          Could not load this delivery
+        </Text>
+        <Text style={{ color: '#888', marginTop: 8, textAlign: 'center' }}>
+          It may have expired or already been assigned to another driver.
+        </Text>
+        <Pressable
+          onPress={() => void refetch()}
+          style={{ marginTop: 16, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 14, backgroundColor: Colors.surface[100] }}
+        >
+          <Text style={{ fontWeight: '700', color: Colors.empire.black }}>Retry</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => router.replace('/(driver)')}
+          style={{ marginTop: 12, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 14, backgroundColor: Colors.gold[500] }}
+        >
+          <Text style={{ fontWeight: '800', color: Colors.empire.black }}>Back to Dashboard</Text>
+        </Pressable>
       </View>
     );
   }
