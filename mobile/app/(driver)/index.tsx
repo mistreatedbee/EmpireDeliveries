@@ -228,6 +228,7 @@ export default function DriverDashboard() {
                 {[
                   { label: 'ETA', value: `${available.etaMinutes} min` },
                   { label: 'Payout', value: `R${available.payout.toFixed(0)}` },
+                  ...(available.distanceKm != null ? [{ label: 'Distance', value: `${available.distanceKm.toFixed(1)} km` }] : []),
                 ].map((s) => (
                   <View key={s.label} style={{ flex: 1, backgroundColor: Colors.surface[100], borderRadius: 14, padding: 10, alignItems: 'center' }}>
                     <Text style={{ fontWeight: '800', color: Colors.empire.black, fontSize: 14 }}>{s.value}</Text>

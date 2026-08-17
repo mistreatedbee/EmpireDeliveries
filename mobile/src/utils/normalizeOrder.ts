@@ -68,6 +68,8 @@ export function normalizeOrder(raw: RawRecord): Order {
     deliveredAt: raw.deliveredAt != null ? String(raw.deliveredAt) : raw.delivered_at != null ? String(raw.delivered_at) : undefined,
     cancelledAt: raw.cancelledAt != null ? String(raw.cancelledAt) : raw.cancelled_at != null ? String(raw.cancelled_at) : undefined,
     cancelReason: raw.cancelReason != null ? String(raw.cancelReason) : raw.cancel_reason != null ? String(raw.cancel_reason) : undefined,
+    cancellationFee: raw.cancellationFee != null ? toNumber(raw.cancellationFee) : raw.cancellation_fee != null ? toNumber(raw.cancellation_fee) : undefined,
+    cancelledBy: raw.cancelledBy != null ? String(raw.cancelledBy) : raw.cancelled_by != null ? String(raw.cancelled_by) : undefined,
     rating: raw.rating != null ? toNumber(raw.rating) : undefined,
     review: raw.review != null ? String(raw.review) : undefined,
   };
@@ -103,11 +105,18 @@ export function normalizeTrackingUpdate(raw: RawRecord, orderId?: string): Track
       latitude: Number.isFinite(lat) ? lat : 0,
       longitude: Number.isFinite(lng) ? lng : 0,
       vehicle: {
-        make: String((driverRaw.vehicle as RawRecord | undefined)?.make ?? driverRaw.vehicle_type ?? ''),
+        // Backend sends flat vehicleMake/vehicleReg/vehicleType on the driver
+        // object (drivers table has no separate model/colour columns) — fall
+        // back to a nested `vehicle` object if an older response shape sends one.
+        // No separate "model" column exists on the drivers table — vehicleType
+        // (e.g. "Car"/"Bakkie") is the closest available descriptor, shown
+        // alongside make rather than claimed to be a model.
+        make: String((driverRaw.vehicle as RawRecord | undefined)?.make ?? driverRaw.vehicleMake ?? driverRaw.vehicle_make ?? ''),
         model: String((driverRaw.vehicle as RawRecord | undefined)?.model ?? ''),
         color: String((driverRaw.vehicle as RawRecord | undefined)?.color ?? ''),
-        plateNumber: String((driverRaw.vehicle as RawRecord | undefined)?.plateNumber ?? ''),
+        plateNumber: String((driverRaw.vehicle as RawRecord | undefined)?.plateNumber ?? driverRaw.vehicleReg ?? driverRaw.vehicle_reg ?? ''),
       },
+      vehicleType: driverRaw.vehicleType != null ? String(driverRaw.vehicleType) : driverRaw.vehicle_type != null ? String(driverRaw.vehicle_type) : undefined,
     };
   }
 

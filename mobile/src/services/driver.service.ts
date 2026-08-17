@@ -34,10 +34,13 @@ export interface AvailableDelivery {
   orderId: string;
   restaurantName: string;
   restaurantAddress: string;
+  restaurantLat?: number | null;
+  restaurantLng?: number | null;
   customerName: string;
   customerAddress: string;
   customerPhone: string;
   itemCount: number;
+  distanceKm?: number | null;
   payout: number;
   etaMinutes: number;
 }
@@ -45,7 +48,8 @@ export interface AvailableDelivery {
 export interface ActiveDelivery extends AvailableDelivery {
   status: string;
   deliveryNotes?: string;
-  items: Array<{ name: string; quantity: number }>;
+  subtotal?: number | null;
+  items: Array<{ name: string; quantity: number; addons?: Array<{ id: string; name: string; price: number }> }>;
   pickedUpAt?: string;
   restaurantLat?: number | null;
   restaurantLng?: number | null;

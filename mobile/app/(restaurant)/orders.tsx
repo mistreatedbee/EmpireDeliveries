@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, Modal, TextInput } from 'react-native';
 import { router } from 'expo-router';
-import { MessageCircle, Car } from 'lucide-react-native';
+import { MessageCircle, Car, X } from 'lucide-react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { restaurantManagementService, RestaurantOrder } from '@/services/restaurant-management.service';
 import { useOrderConversation } from '@/hooks/useChat';
+import { useUIStore } from '@/stores/uiStore';
+import { getUserErrorMessage } from '@/utils/errorHandler';
 import { Colors } from '@/constants/colors';
 
 type Filter = 'all' | 'placed' | 'preparing' | 'ready' | 'history';
@@ -19,7 +21,10 @@ const FILTERS: { id: Filter; label: string }[] = [
 
 export default function RestaurantOrders() {
   const [filter, setFilter] = useState<Filter>('all');
+  const [cancelTarget, setCancelTarget] = useState<RestaurantOrder | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
   const queryClient = useQueryClient();
+  const { showToast } = useUIStore();
 
   const statusParam =
     filter === 'all' ? 'placed,confirmed,preparing,ready'
@@ -44,6 +49,16 @@ export default function RestaurantOrders() {
     mutationFn: restaurantManagementService.markReady,
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['restaurant', 'orders'] }),
   });
+  const cancelMutation = useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) => restaurantManagementService.cancelOrder(id, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['restaurant', 'orders'] });
+      setCancelTarget(null);
+      setCancelReason('');
+      showToast('Order cancelled', 'success');
+    },
+    onError: (error) => showToast(getUserErrorMessage(error, 'Could not cancel this order.'), 'error'),
+  });
 
   function getAction(order: RestaurantOrder) {
     if (order.status === 'placed') return { label: 'Confirm', onPress: () => confirmMutation.mutate(order.id), loading: confirmMutation.isPending };
@@ -54,6 +69,39 @@ export default function RestaurantOrders() {
 
   return (
     <View style={{ flex: 1, backgroundColor: Colors.surface[100] }}>
+      <Modal visible={!!cancelTarget} transparent animationType="fade" onRequestClose={() => setCancelTarget(null)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 24 }}>
+          <View style={{ backgroundColor: '#fff', borderRadius: 18, padding: 20 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <Text style={{ fontWeight: '800', fontSize: 17, color: Colors.empire.black }}>Cancel order</Text>
+              <Pressable onPress={() => setCancelTarget(null)} hitSlop={8}>
+                <X size={20} color={Colors.empire.black} />
+              </Pressable>
+            </View>
+            <Text style={{ color: '#888', fontSize: 13, marginBottom: 12 }}>
+              Reason for cancelling {cancelTarget?.customerName}'s order (e.g. item out of stock) — the customer will see this.
+            </Text>
+            <TextInput
+              value={cancelReason}
+              onChangeText={setCancelReason}
+              placeholder="Reason..."
+              placeholderTextColor="#999"
+              multiline
+              style={{ backgroundColor: Colors.surface[100], borderRadius: 10, padding: 12, color: Colors.empire.black, marginBottom: 16, minHeight: 70, textAlignVertical: 'top' }}
+            />
+            <Pressable
+              onPress={() => cancelTarget && cancelReason.trim() && cancelMutation.mutate({ id: cancelTarget.id, reason: cancelReason.trim() })}
+              disabled={!cancelReason.trim() || cancelMutation.isPending}
+              style={{ backgroundColor: '#FFEBEE', borderRadius: 12, paddingVertical: 14, alignItems: 'center', opacity: cancelReason.trim() ? 1 : 0.5 }}
+            >
+              {cancelMutation.isPending
+                ? <ActivityIndicator color={Colors.empire.error} size="small" />
+                : <Text style={{ color: Colors.empire.error, fontWeight: '800' }}>Cancel Order</Text>}
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
       <View style={{ backgroundColor: Colors.empire.black, paddingHorizontal: 20, paddingTop: 56, paddingBottom: 16 }}>
         <Text style={{ color: '#fff', fontSize: 22, fontWeight: '900' }}>Orders</Text>
       </View>
@@ -79,7 +127,12 @@ export default function RestaurantOrders() {
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
         {isLoading && <ActivityIndicator color={Colors.gold[500]} style={{ marginTop: 20 }} />}
         {!isLoading && (orders ?? []).map((order) => (
-          <RestaurantOrderCard key={order.id} order={order} action={getAction(order)} />
+          <RestaurantOrderCard
+            key={order.id}
+            order={order}
+            action={getAction(order)}
+            onCancel={['placed', 'confirmed', 'preparing'].includes(order.status) ? () => setCancelTarget(order) : undefined}
+          />
         ))}
         {!isLoading && (orders ?? []).length === 0 && (
           <Text style={{ color: '#bbb', textAlign: 'center', fontSize: 14, paddingVertical: 40 }}>No orders found</Text>
@@ -92,9 +145,11 @@ export default function RestaurantOrders() {
 function RestaurantOrderCard({
   order,
   action,
+  onCancel,
 }: {
   order: RestaurantOrder;
   action: { label: string; onPress: () => void; loading: boolean } | null;
+  onCancel?: () => void;
 }) {
   const { data: customerConversation } = useOrderConversation(order.id, 'customer_restaurant');
   const { data: driverConversation } = useOrderConversation(order.id, 'driver_restaurant');
@@ -134,16 +189,47 @@ function RestaurantOrderCard({
       {/* Items */}
       <View style={{ backgroundColor: Colors.surface[100], borderRadius: 12, padding: 12, marginBottom: 10 }}>
         {order.items.map((item, i) => (
-          <Text key={i} style={{ color: '#555', fontSize: 13, marginBottom: 2 }}>
-            {item.quantity}× {item.name}
-          </Text>
+          <View key={i} style={{ marginBottom: 4 }}>
+            <Text style={{ color: '#555', fontSize: 13 }}>
+              {item.quantity}× {item.name}
+            </Text>
+            {!!item.addons?.length && (
+              <Text style={{ color: '#999', fontSize: 12, marginTop: 1 }}>
+                + {item.addons.map((a) => a.name).join(', ')}
+              </Text>
+            )}
+          </View>
         ))}
         {order.deliveryNotes && (
           <Text style={{ color: Colors.empire.warning, fontSize: 12, marginTop: 6, fontWeight: '600' }}>
             Note: {order.deliveryNotes}
           </Text>
         )}
+        {order.distanceKm != null && (
+          <Text style={{ color: '#999', fontSize: 12, marginTop: 6 }}>
+            {order.distanceKm.toFixed(1)} km to customer
+          </Text>
+        )}
       </View>
+
+      {/* Price breakdown */}
+      {order.subtotal != null && (
+        <View style={{ marginBottom: 10 }}>
+          {[
+            ['Subtotal', order.subtotal],
+            ['Delivery Fee', order.deliveryFee ?? 0],
+            ['Service Fee', order.serviceFee ?? 0],
+            ...(order.discount ? [['Discount', -order.discount] as const] : []),
+          ].map(([label, value]) => (
+            <View key={label as string} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 }}>
+              <Text style={{ color: '#999', fontSize: 12 }}>{label}</Text>
+              <Text style={{ color: '#999', fontSize: 12 }}>
+                {(value as number) < 0 ? '-' : ''}R{Math.abs(value as number).toFixed(2)}
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
 
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Text style={{ fontWeight: '900', color: Colors.empire.black, fontSize: 17 }}>R{order.total.toFixed(0)}</Text>
@@ -168,6 +254,11 @@ function RestaurantOrderCard({
           <Text style={{ color: Colors.empire.error, fontWeight: '700', fontSize: 13 }}>Cancelled</Text>
         )}
       </View>
+      {onCancel && (
+        <Pressable onPress={onCancel} style={{ marginTop: 10, alignItems: 'center' }}>
+          <Text style={{ color: Colors.empire.error, fontWeight: '700', fontSize: 12 }}>Cancel Order</Text>
+        </Pressable>
+      )}
     </View>
   );
 }

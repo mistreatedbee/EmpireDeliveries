@@ -26,16 +26,28 @@ export interface RestaurantStats {
   activeOrders: number;
 }
 
+export interface RestaurantOrderAddon {
+  id: string;
+  name: string;
+  price: number;
+}
+
 export interface RestaurantOrderItem {
   name: string;
   quantity: number;
   unitPrice: number;
+  addons?: RestaurantOrderAddon[];
 }
 
 export interface RestaurantOrder {
   id: string;
   status: string;
+  subtotal?: number;
+  deliveryFee?: number;
+  serviceFee?: number;
+  discount?: number;
   total: number;
+  distanceKm?: number | null;
   placedAt: string;
   confirmedAt?: string;
   deliveryNotes?: string;
@@ -127,6 +139,10 @@ export const restaurantManagementService = {
 
   async markReady(id: string): Promise<void> {
     await api.put(`/restaurant/orders/${id}/ready`);
+  },
+
+  async cancelOrder(id: string, reason: string): Promise<void> {
+    await api.post(`/restaurant/orders/${id}/cancel`, { reason });
   },
 
   async getMenu(): Promise<RestaurantMenuCategory[]> {

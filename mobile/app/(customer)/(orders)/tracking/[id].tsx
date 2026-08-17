@@ -8,7 +8,6 @@ import {
   ScrollView,
   Modal,
   TextInput,
-  Alert,
   Animated,
 } from 'react-native';
 import { PlatformMap } from '@/components/map/PlatformMap';
@@ -63,6 +62,9 @@ export default function OrderTrackingScreen() {
   const [ratePrompted, setRatePrompted] = useState(false);
   const [notesModalOpen, setNotesModalOpen] = useState(false);
   const [notesDraft, setNotesDraft] = useState('');
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState<string | null>(null);
+  const [cancelOtherText, setCancelOtherText] = useState('');
   const stepPulse = useRef(new Animated.Value(1)).current;
 
   const status = tracking?.status ?? order?.status ?? 'placed';
@@ -113,10 +115,17 @@ export default function OrderTrackingScreen() {
   });
 
   const cancelMutation = useMutation({
-    mutationFn: () => orderService.cancel(orderId),
-    onSuccess: () => {
+    mutationFn: (reason: string) => orderService.cancel(orderId, reason),
+    onSuccess: (updated) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });
-      showToast('Order cancelled', 'success');
+      const fee = updated.cancellationFee ?? 0;
+      showToast(
+        fee > 0
+          ? `Order cancelled — a ${formatPrice(fee)} cancellation fee applies.`
+          : 'Order cancelled',
+        'success',
+      );
+      setCancelModalOpen(false);
       router.replace('/(customer)/(orders)');
     },
     onError: (error) => showToast(getUserErrorMessage(error, 'This order can no longer be cancelled.'), 'error'),
@@ -127,15 +136,23 @@ export default function OrderTrackingScreen() {
     setNotesModalOpen(true);
   };
 
+  const CANCEL_REASONS = ['Changed my mind', 'Ordering elsewhere', 'Taking too long', 'Other'];
+  const cancelFeeApplies = status === 'preparing';
+  const cancelFeeEstimate = order ? Math.round(order.total * 0.10 * 100) / 100 : 0;
+
+  const openCancelModal = () => {
+    setCancelReason(null);
+    setCancelOtherText('');
+    setCancelModalOpen(true);
+  };
+
   const confirmCancel = () => {
-    Alert.alert(
-      'Cancel order?',
-      'You can cancel while the restaurant is still preparing your order and before a driver picks it up.',
-      [
-        { text: 'Keep Order', style: 'cancel' },
-        { text: 'Cancel Order', style: 'destructive', onPress: () => cancelMutation.mutate() },
-      ],
-    );
+    const reason = cancelReason === 'Other' ? cancelOtherText.trim() : cancelReason;
+    if (!reason) {
+      showToast('Please select a reason for cancelling.', 'error');
+      return;
+    }
+    cancelMutation.mutate(reason);
   };
 
   const deliveryAddressLabel = useMemo(() => {
@@ -411,6 +428,12 @@ export default function OrderTrackingScreen() {
                     <Star size={11} color={T.text} fill={T.text} />
                     <Text style={{ fontSize: 13, color: T.textSec }}>{tracking.driver.rating.toFixed(1)} · Your driver</Text>
                   </View>
+                  {(tracking.driver.vehicle.make || tracking.driver.vehicleType || tracking.driver.vehicle.plateNumber) && (
+                    <Text style={{ fontSize: 12, color: T.textTer, marginTop: 2 }}>
+                      {[tracking.driver.vehicleType, tracking.driver.vehicle.make].filter(Boolean).join(' · ')}
+                      {tracking.driver.vehicle.plateNumber ? ` · ${tracking.driver.vehicle.plateNumber}` : ''}
+                    </Text>
+                  )}
                 </View>
                 <View style={{ flexDirection: 'row', gap: 8 }}>
                   <Pressable
@@ -450,6 +473,11 @@ export default function OrderTrackingScreen() {
                     <Text style={{ color: T.textSec, fontSize: 13 }}>
                       {item.quantity}× {item.menuItemName}
                     </Text>
+                    {item.addons.length > 0 && (
+                      <Text style={{ color: T.textTer, fontSize: 12, marginTop: 2 }}>
+                        + {item.addons.map((a) => a.name).join(', ')}
+                      </Text>
+                    )}
                     {item.instructions ? (
                       <Text style={{ color: T.textTer, fontSize: 12, marginTop: 2, fontStyle: 'italic' }}>
                         Note: {item.instructions}
@@ -457,6 +485,25 @@ export default function OrderTrackingScreen() {
                     ) : null}
                   </View>
                 ))}
+
+                <View style={{ height: 1, backgroundColor: T.border, marginVertical: 10 }} />
+                {[
+                  ['Subtotal', order.subtotal],
+                  ['Delivery Fee', order.deliveryFee],
+                  ['Service Fee', order.serviceFee],
+                  ...(order.discount > 0 ? [['Discount', -order.discount] as const] : []),
+                ].map(([label, value]) => (
+                  <View key={label as string} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <Text style={{ color: T.textSec, fontSize: 13 }}>{label}</Text>
+                    <Text style={{ color: T.textSec, fontSize: 13 }}>
+                      {(value as number) < 0 ? '-' : ''}{formatPrice(Math.abs(value as number))}
+                    </Text>
+                  </View>
+                ))}
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
+                  <Text style={{ color: T.text, fontWeight: '800', fontSize: 14 }}>Total</Text>
+                  <Text style={{ color: T.text, fontWeight: '800', fontSize: 14 }}>{formatPrice(order.total)}</Text>
+                </View>
               </View>
             )}
 
@@ -466,7 +513,7 @@ export default function OrderTrackingScreen() {
                 size="lg"
                 fullWidth
                 loading={cancelMutation.isPending}
-                onPress={confirmCancel}
+                onPress={openCancelModal}
               >
                 Cancel Order
               </Button>
@@ -514,6 +561,84 @@ export default function OrderTrackingScreen() {
               onPress={() => updateNotesMutation.mutate(notesDraft)}
             >
               Save Instructions
+            </Button>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={cancelModalOpen} animationType="slide" transparent onRequestClose={() => setCancelModalOpen(false)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: T.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 32 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <Text style={{ fontSize: 18, fontWeight: '900', color: T.text }}>Cancel order?</Text>
+              <Pressable onPress={() => setCancelModalOpen(false)} style={{ padding: 4 }}>
+                <X size={20} color={T.text} />
+              </Pressable>
+            </View>
+
+            <Text style={{ color: T.textSec, fontSize: 13, marginBottom: 12 }}>Tell us why you're cancelling:</Text>
+            {CANCEL_REASONS.map((reason) => (
+              <Pressable
+                key={reason}
+                onPress={() => setCancelReason(reason)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingVertical: 12,
+                  paddingHorizontal: 14,
+                  borderRadius: 12,
+                  borderWidth: 1.5,
+                  borderColor: cancelReason === reason ? T.action : T.border,
+                  backgroundColor: cancelReason === reason ? T.goldBg : T.surface,
+                  marginBottom: 8,
+                }}
+              >
+                <Text style={{ color: T.text, fontSize: 14, fontWeight: cancelReason === reason ? '700' : '500' }}>{reason}</Text>
+              </Pressable>
+            ))}
+
+            {cancelReason === 'Other' && (
+              <TextInput
+                value={cancelOtherText}
+                onChangeText={setCancelOtherText}
+                placeholder="Tell us more…"
+                placeholderTextColor={T.textTer}
+                multiline
+                numberOfLines={3}
+                maxLength={300}
+                style={{
+                  backgroundColor: T.surface,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: T.border,
+                  padding: 12,
+                  minHeight: 80,
+                  textAlignVertical: 'top',
+                  color: T.text,
+                  fontSize: 14,
+                  marginBottom: 8,
+                }}
+              />
+            )}
+
+            {cancelFeeApplies && (
+              <View style={{ backgroundColor: T.dangerBg, borderRadius: 12, padding: 12, marginTop: 8, marginBottom: 8 }}>
+                <Text style={{ color: T.danger, fontSize: 13, lineHeight: 19 }}>
+                  A 10% cancellation fee ({formatPrice(cancelFeeEstimate)}) applies since the restaurant has already
+                  started preparing your order.
+                </Text>
+              </View>
+            )}
+
+            <Button
+              variant="destructive"
+              size="lg"
+              fullWidth
+              loading={cancelMutation.isPending}
+              onPress={confirmCancel}
+              style={{ marginTop: 8 }}
+            >
+              Confirm Cancellation
             </Button>
           </View>
         </View>

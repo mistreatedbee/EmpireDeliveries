@@ -207,6 +207,16 @@ export default function ActiveDelivery() {
             <Text style={{ color: '#aaa', fontSize: 13, marginTop: 2 }}>
               {step === 'pickup' ? (delivery?.restaurantAddress ?? '') : (delivery?.customerAddress ?? '')}
             </Text>
+            <View style={{ flexDirection: 'row', gap: 12, marginTop: 6 }}>
+              {delivery?.distanceKm != null && (
+                <Text style={{ color: Colors.gold[500], fontSize: 12, fontWeight: '700' }}>
+                  {delivery.distanceKm.toFixed(1)} km
+                </Text>
+              )}
+              <Text style={{ color: Colors.empire.success, fontSize: 12, fontWeight: '700' }}>
+                Payout R{delivery?.payout?.toFixed(2) ?? '0.00'}
+              </Text>
+            </View>
           </View>
           <View style={{ width: 44, height: 44, backgroundColor: Colors.empire.black, borderRadius: 14, alignItems: 'center', justifyContent: 'center' }}>
             <Navigation size={18} color="#fff" />
@@ -217,11 +227,18 @@ export default function ActiveDelivery() {
           <View>
             <Text style={{ fontWeight: '800', color: Colors.empire.black, fontSize: 15, marginBottom: 12 }}>Order Items</Text>
             {(delivery?.items ?? []).map((item, i) => (
-              <View key={i} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderWidth: 1, borderColor: Colors.surface[200], borderRadius: 16, padding: 14, marginBottom: 8 }}>
-                <Package size={18} color="#bbb" style={{ marginRight: 12 }} />
-                <Text style={{ fontWeight: '600', color: Colors.empire.black, fontSize: 14 }}>
-                  {item.name} x{item.quantity}
-                </Text>
+              <View key={i} style={{ flexDirection: 'row', alignItems: 'flex-start', backgroundColor: '#fff', borderWidth: 1, borderColor: Colors.surface[200], borderRadius: 16, padding: 14, marginBottom: 8 }}>
+                <Package size={18} color="#bbb" style={{ marginRight: 12, marginTop: 2 }} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontWeight: '600', color: Colors.empire.black, fontSize: 14 }}>
+                    {item.name} x{item.quantity}
+                  </Text>
+                  {!!item.addons?.length && (
+                    <Text style={{ color: '#aaa', fontSize: 12, marginTop: 2 }}>
+                      + {item.addons.map((a) => a.name).join(', ')}
+                    </Text>
+                  )}
+                </View>
               </View>
             ))}
             <Pressable

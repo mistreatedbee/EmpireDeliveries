@@ -61,6 +61,7 @@ export interface Driver {
     color: string;
     plateNumber: string;
   };
+  vehicleType?: string;
   rating: number;
 }
 
@@ -113,6 +114,8 @@ export interface Order {
   deliveredAt?: string;
   cancelledAt?: string;
   cancelReason?: string;
+  cancellationFee?: number;
+  cancelledBy?: 'customer' | 'restaurant' | string;
   rating?: number;
   review?: string;
 }
