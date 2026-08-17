@@ -260,6 +260,19 @@ export default function OrderTrackingScreen() {
 
   const isLoading = trackingLoading || orderLoading;
 
+  // The backend can cold-start after being idle (hosting free-tier sleep),
+  // which can take up to a minute on the first request — surface that after
+  // a few seconds instead of leaving a bare spinner with no explanation.
+  const [showColdStartHint, setShowColdStartHint] = useState(false);
+  useEffect(() => {
+    if (!isLoading) {
+      setShowColdStartHint(false);
+      return;
+    }
+    const t = setTimeout(() => setShowColdStartHint(true), 4000);
+    return () => clearTimeout(t);
+  }, [isLoading]);
+
   return (
     <ScreenWrapper bg="white" edges={['bottom']}>
       <View style={{ position: 'absolute', top: 52, left: 16, zIndex: 10 }}>
@@ -294,6 +307,11 @@ export default function OrderTrackingScreen() {
           <View style={{ alignItems: 'center', paddingVertical: 32 }}>
             <ActivityIndicator size="large" color={T.action} />
             <Text style={{ marginTop: 12, color: T.textSec }}>Loading live order status…</Text>
+            {showColdStartHint && (
+              <Text style={{ marginTop: 8, color: T.textTer, fontSize: 12, textAlign: 'center', paddingHorizontal: 24 }}>
+                This can take up to a minute if our server was idle. Hang tight…
+              </Text>
+            )}
           </View>
         ) : (
           <>
