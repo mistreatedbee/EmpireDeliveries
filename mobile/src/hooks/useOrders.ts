@@ -49,10 +49,19 @@ export function useOrderTracking(id: string) {
       void orderService.getTracking(id).then((tracking) => {
         setData(tracking);
         setIsLoading(false);
+        setIsError(false);
         if (tracking.status === 'delivered' || tracking.status === 'cancelled') {
           if (fallbackTimer) clearInterval(fallbackTimer);
         }
-      }).catch(() => null);
+      }).catch(() => {
+        // Previously swallowed silently — if this was the very first poll and
+        // SSE also never fires a 'message'/'error' event, isLoading would
+        // stay true forever with no way out, leaving the screen spinning
+        // indefinitely with no feedback. Surface it instead so the UI can
+        // fall back to the plain order data it already has.
+        setIsLoading(false);
+        setIsError(true);
+      });
     };
 
     pollOnce();

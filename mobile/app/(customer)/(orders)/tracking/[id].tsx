@@ -55,7 +55,7 @@ export default function OrderTrackingScreen() {
   const { user } = useAuthStore();
   const { showToast } = useUIStore();
   const { currentLocation } = useLocationStore();
-  const { data: tracking, isLoading: trackingLoading } = useOrderTracking(orderId);
+  const { data: tracking, isLoading: trackingLoading, isError: trackingError } = useOrderTracking(orderId);
   const { data: order, isLoading: orderLoading } = useOrderDetail(orderId);
   const { data: driverConversation } = useOrderConversation(orderId, 'customer_driver');
 
@@ -315,6 +315,14 @@ export default function OrderTrackingScreen() {
           </View>
         ) : (
           <>
+            {trackingError && !tracking && (
+              <View style={{ backgroundColor: T.dangerBg, borderRadius: 14, padding: 14, marginBottom: 16 }}>
+                <Text style={{ color: T.danger, fontSize: 13, lineHeight: 19 }}>
+                  Live tracking is temporarily unavailable — showing your last known order status below.
+                  We'll keep retrying automatically.
+                </Text>
+              </View>
+            )}
             <View style={{ backgroundColor: T.surface, borderRadius: 16, padding: 18, borderWidth: 1, borderColor: T.border, marginBottom: 16 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <View style={{ flex: 1, paddingRight: 12 }}>
