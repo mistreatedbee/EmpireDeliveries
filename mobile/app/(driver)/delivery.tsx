@@ -8,6 +8,8 @@ import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { driverService } from '@/services/driver.service';
+import { driverKeys } from '@/constants/driverQueryKeys';
+import { useAuthStore } from '@/stores/authStore';
 import { useLocationStore } from '@/stores/locationStore';
 import { Colors } from '@/constants/colors';
 import { useOrderConversation } from '@/hooks/useChat';
@@ -16,6 +18,8 @@ type Step = 'pickup' | 'deliver' | 'complete';
 
 export default function ActiveDelivery() {
   const { orderId } = useLocalSearchParams<{ orderId: string }>();
+  const { user } = useAuthStore();
+  const driverId = user?.id ?? '';
   const queryClient = useQueryClient();
   const { currentLocation, setCurrentLocation } = useLocationStore();
   const [step, setStep] = useState<Step>('pickup');
@@ -37,9 +41,10 @@ export default function ActiveDelivery() {
   }, [step]);
 
   const { data: delivery, isLoading, isError, refetch } = useQuery({
-    queryKey: ['driver', 'active'],
+    queryKey: driverKeys.active(driverId),
     queryFn: driverService.getActiveDelivery,
-    enabled: step !== 'complete',
+    enabled: Boolean(driverId) && step !== 'complete',
+    staleTime: 0,
     refetchInterval: step !== 'complete' ? 3000 : false,
     retry: 4,
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
@@ -76,7 +81,7 @@ export default function ActiveDelivery() {
   const pickupMutation = useMutation({
     mutationFn: () => driverService.pickupDelivery(orderId ?? delivery?.orderId ?? ''),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['driver', 'active'] });
+      if (driverId) queryClient.invalidateQueries({ queryKey: driverKeys.active(driverId) });
       setStep('deliver');
     },
     onError: () => Alert.alert('Error', 'Could not confirm pickup. Please try again.'),
@@ -89,10 +94,13 @@ export default function ActiveDelivery() {
     ),
     onSuccess: (data) => {
       setCompletedPayout(data.payout);
-      queryClient.invalidateQueries({ queryKey: ['driver', 'active'] });
-      queryClient.invalidateQueries({ queryKey: ['driver', 'stats'] });
-      queryClient.invalidateQueries({ queryKey: ['driver', 'history'] });
-      queryClient.invalidateQueries({ queryKey: ['driver', 'wallet'] });
+      if (driverId) {
+        queryClient.invalidateQueries({ queryKey: driverKeys.active(driverId) });
+        queryClient.invalidateQueries({ queryKey: driverKeys.stats(driverId) });
+        queryClient.invalidateQueries({ queryKey: driverKeys.history(driverId) });
+        queryClient.invalidateQueries({ queryKey: driverKeys.wallet(driverId) });
+        queryClient.invalidateQueries({ queryKey: driverKeys.available(driverId) });
+      }
       setStep('complete');
     },
     onError: () => Alert.alert('Error', 'Could not confirm delivery. Please try again.'),

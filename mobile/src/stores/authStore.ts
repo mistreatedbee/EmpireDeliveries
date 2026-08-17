@@ -4,6 +4,7 @@ import { User } from '@/types/auth.types';
 import { storageService } from '@/services/storage.service';
 import { notificationService } from '@/services/notification.service';
 import { setInsforgeSessionToken } from '@/lib/insforgeClient';
+import { queryClient } from '@/lib/queryClient';
 
 const USER_KEY = 'empire_user';
 
@@ -51,6 +52,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   isLoading: true,
 
   setAuth: async (user, token, refreshToken) => {
+    queryClient.clear();
     await storageService.setToken(token);
     if (refreshToken) await storageService.setRefreshToken(refreshToken);
     await AsyncStorage.setItem(USER_KEY, JSON.stringify(user));
@@ -61,6 +63,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   clearAuth: async () => {
     void unregisterPushToken();
+    queryClient.clear();
     await storageService.clearTokens();
     await AsyncStorage.removeItem(USER_KEY);
     set({ user: null, token: null, refreshToken: null, isAuthenticated: false });
@@ -69,6 +72,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   logout: async () => {
     void unregisterPushToken();
+    queryClient.clear();
     await storageService.clearTokens();
     await AsyncStorage.removeItem(USER_KEY);
     set({ user: null, token: null, refreshToken: null, isAuthenticated: false });

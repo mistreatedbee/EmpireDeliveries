@@ -90,7 +90,7 @@ export function setupNotificationListeners() {
             queryClient.invalidateQueries({ queryKey: ['restaurant', 'orders'] });
           }
           if (data?.type === 'driver_new_delivery') {
-            queryClient.invalidateQueries({ queryKey: ['driver', 'available'] });
+            queryClient.invalidateQueries({ queryKey: ['driver'] });
           }
           if (data?.type === 'new_message' && data.conversationId) {
             queryClient.invalidateQueries({ queryKey: queryKeys.messages.thread(data.conversationId) });

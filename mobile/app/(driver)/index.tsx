@@ -8,6 +8,7 @@ import { Bike, MapPin, Navigation } from 'lucide-react-native';
 import { useAuthStore } from '@/stores/authStore';
 import { useLocationStore } from '@/stores/locationStore';
 import { driverService, AvailableDelivery } from '@/services/driver.service';
+import { driverKeys } from '@/constants/driverQueryKeys';
 import { QueryErrorState } from '@/components/empire';
 import { Colors } from '@/constants/colors';
 
@@ -146,6 +147,7 @@ function RequestCard({
 
 export default function DriverDashboard() {
   const { user } = useAuthStore();
+  const driverId = user?.id ?? '';
   const { currentLocation, setCurrentLocation } = useLocationStore();
   const queryClient = useQueryClient();
   const [online, setOnline] = useState(false);
@@ -156,25 +158,44 @@ export default function DriverDashboard() {
   const resumedDeliveryRef = useRef(false);
   const autoDeclinedRef = useRef<string | null>(null);
 
+  // Never carry online state or cached dispatch data across driver accounts.
+  useEffect(() => {
+    setOnline(false);
+    setPendingOrderId(null);
+    resumedDeliveryRef.current = false;
+    autoDeclinedRef.current = null;
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (locationWatchRef.current) {
+      locationWatchRef.current.remove();
+      locationWatchRef.current = null;
+    }
+  }, [driverId]);
+
   const { data: stats, isLoading: statsLoading, isError: statsError, refetch: refetchStats } = useQuery({
-    queryKey: ['driver', 'stats'],
+    queryKey: driverKeys.stats(driverId),
     queryFn: driverService.getStats,
-    enabled: online,
+    enabled: Boolean(driverId) && online,
+    staleTime: 0,
     refetchInterval: online ? 30000 : false,
   });
 
   const { data: availableList = [], isLoading: availLoading } = useQuery({
-    queryKey: ['driver', 'available'],
+    queryKey: driverKeys.available(driverId),
     queryFn: driverService.getAvailableDeliveries,
-    enabled: online,
+    enabled: Boolean(driverId) && online,
+    staleTime: 0,
+    gcTime: 0,
     refetchInterval: online ? 5000 : false,
+    refetchOnMount: 'always',
   });
 
   const { data: activeDelivery } = useQuery({
-    queryKey: ['driver', 'active'],
+    queryKey: driverKeys.active(driverId),
     queryFn: driverService.getActiveDelivery,
-    enabled: online,
+    enabled: Boolean(driverId) && online,
+    staleTime: 0,
     refetchInterval: online ? 8000 : false,
+    refetchOnMount: 'always',
   });
 
   useEffect(() => {
@@ -188,8 +209,10 @@ export default function DriverDashboard() {
   }, [online, activeDelivery?.orderId]);
 
   const { data: history } = useQuery({
-    queryKey: ['driver', 'history'],
+    queryKey: driverKeys.history(driverId),
     queryFn: driverService.getHistory,
+    enabled: Boolean(driverId),
+    staleTime: 0,
   });
 
   const statusMutation = useMutation({
@@ -214,7 +237,7 @@ export default function DriverDashboard() {
         startLocationWatch();
       } else {
         stopLocationWatch();
-        queryClient.removeQueries({ queryKey: ['driver', 'available'] });
+        if (driverId) queryClient.removeQueries({ queryKey: driverKeys.available(driverId) });
       }
     },
   });
@@ -223,10 +246,11 @@ export default function DriverDashboard() {
     mutationFn: (orderId: string) => driverService.acceptDelivery(orderId),
     onMutate: (orderId) => setPendingOrderId(orderId),
     onSuccess: async (_, orderId) => {
+      if (!driverId) return;
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['driver', 'available'] }),
-        queryClient.invalidateQueries({ queryKey: ['driver', 'active'] }),
-        queryClient.invalidateQueries({ queryKey: ['driver', 'stats'] }),
+        queryClient.invalidateQueries({ queryKey: driverKeys.available(driverId) }),
+        queryClient.invalidateQueries({ queryKey: driverKeys.active(driverId) }),
+        queryClient.invalidateQueries({ queryKey: driverKeys.stats(driverId) }),
       ]);
       router.push({ pathname: '/(driver)/delivery', params: { orderId } });
     },
@@ -237,7 +261,9 @@ export default function DriverDashboard() {
   const rejectMutation = useMutation({
     mutationFn: (orderId: string) => driverService.rejectDelivery(orderId),
     onMutate: (orderId) => setPendingOrderId(orderId),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['driver', 'available'] }),
+    onSuccess: () => {
+      if (driverId) void queryClient.invalidateQueries({ queryKey: driverKeys.available(driverId) });
+    },
     onError: () => Alert.alert('Could not decline', 'Please try again.'),
     onSettled: () => setPendingOrderId(null),
   });
@@ -287,9 +313,11 @@ export default function DriverDashboard() {
     if (!first || autoDeclinedRef.current === first.orderId) return;
     autoDeclinedRef.current = first.orderId;
     void driverService.rejectDelivery(first.orderId)
-      .then(() => queryClient.invalidateQueries({ queryKey: ['driver', 'available'] }))
+      .then(() => {
+        if (driverId) return queryClient.invalidateQueries({ queryKey: driverKeys.available(driverId) });
+      })
       .catch(() => null);
-  }, [countdown, availableList, activeDelivery, queryClient]);
+  }, [countdown, availableList, activeDelivery, queryClient, driverId]);
 
   const handleToggle = (v: boolean) => {
     statusMutation.mutate(v);
