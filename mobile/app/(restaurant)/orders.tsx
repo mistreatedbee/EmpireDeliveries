@@ -102,7 +102,7 @@ export default function RestaurantOrders() {
         </View>
       </Modal>
 
-      <View style={{ backgroundColor: Colors.empire.black, paddingHorizontal: 20, paddingTop: 56, paddingBottom: 16 }}>
+      <View style={{ backgroundColor: Colors.empire.black, paddingHorizontal: 20, paddingTop: 56, paddingBottom: 8 }}>
         <Text style={{ color: '#fff', fontSize: 22, fontWeight: '900' }}>Orders</Text>
       </View>
 
@@ -110,7 +110,7 @@ export default function RestaurantOrders() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 12, gap: 8 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 8, gap: 8 }}
         style={{ backgroundColor: Colors.empire.black, borderBottomLeftRadius: 20, borderBottomRightRadius: 20 }}
       >
         {FILTERS.map((f) => (

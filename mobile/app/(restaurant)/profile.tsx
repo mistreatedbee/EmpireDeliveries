@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, Image, ScrollView, Pressable, ActivityIndicator, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { Store, MapPin, DollarSign, ShoppingBag, LogOut, ChevronRight, Lock, Pencil, BadgeCheck } from 'lucide-react-native';
+import { Store, MapPin, DollarSign, ShoppingBag, Clock, LogOut, ChevronRight, Lock, Pencil, BadgeCheck } from 'lucide-react-native';
 import { useAuthStore } from '@/stores/authStore';
 import { restaurantManagementService } from '@/services/restaurant-management.service';
 import { Colors } from '@/constants/colors';
@@ -24,10 +24,23 @@ export default function RestaurantProfile() {
 
   return (
     <View style={{ flex: 1, backgroundColor: Colors.empire.black }}>
+      {/* Cover image */}
+      {profile?.coverImage ? (
+        <Image
+          source={{ uri: profile.coverImage }}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 160, opacity: 0.35 }}
+          resizeMode="cover"
+        />
+      ) : null}
+
       {/* Header */}
       <View style={{ paddingHorizontal: 24, paddingTop: 60, paddingBottom: 32, alignItems: 'center' }}>
-        <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: Colors.empire.charcoal, borderWidth: 2, borderColor: Colors.gold[500], alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
-          <Store size={34} color={Colors.gold[500]} />
+        <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: Colors.empire.charcoal, borderWidth: 2, borderColor: Colors.gold[500], alignItems: 'center', justifyContent: 'center', marginBottom: 14, overflow: 'hidden' }}>
+          {profile?.logo ? (
+            <Image source={{ uri: profile.logo }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+          ) : (
+            <Store size={34} color={Colors.gold[500]} />
+          )}
         </View>
         {isLoading ? (
           <ActivityIndicator color={Colors.gold[500]} />
@@ -69,6 +82,15 @@ export default function RestaurantProfile() {
               Icon: ShoppingBag,
               label: 'Minimum Order',
               value: isLoading ? '—' : `R${(profile?.minOrder ?? 0).toFixed(2)}`,
+            },
+            {
+              Icon: Clock,
+              label: 'Delivery Time',
+              value: isLoading
+                ? '—'
+                : profile?.deliveryTimeMin != null && profile?.deliveryTimeMax != null
+                  ? `${profile.deliveryTimeMin}–${profile.deliveryTimeMax} min`
+                  : 'Not set',
             },
           ].map(({ Icon, label, value }, i, arr) => (
             <View
