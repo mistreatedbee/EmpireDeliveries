@@ -50,7 +50,11 @@ function StepRow({
           justifyContent: 'center',
           borderWidth: done || active ? 1.5 : 1,
           borderColor: done ? T.success : active ? T.action : T.border,
-          transform: active ? [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.06] }) }] : undefined,
+          // Always pass a stable transform array (never toggle to `undefined`) —
+          // switching an Animated.View's transform between an array and undefined
+          // is a known trigger for "Cannot read property 'forEach' of null" in
+          // RN's native Animated module when the node graph is torn down/rebuilt.
+          transform: [{ scale: active ? pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.06] }) : 1 }],
         }}
       >
         {done ? <Check size={20} color={T.success} strokeWidth={2.5} /> : <Icon size={18} color={color} />}

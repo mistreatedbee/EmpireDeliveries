@@ -361,7 +361,9 @@ export default function OrderTrackingScreen() {
                           backgroundColor: done ? T.action : T.border,
                           alignItems: 'center',
                           justifyContent: 'center',
-                          transform: active ? [{ scale: stepPulse }] : undefined,
+                          // Keep a stable transform array (never toggle to `undefined`) —
+                          // avoids a known RN Animated native-module crash, see payment-success.tsx.
+                          transform: [{ scale: active ? stepPulse : 1 }],
                         }}
                       >
                         {done ? (
