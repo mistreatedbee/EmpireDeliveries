@@ -74,12 +74,12 @@ export const adminService = {
 
   async getApplications(params?: { type?: string; status?: string }): Promise<Application[]> {
     const res = await api.get<never, ApiResponse<Application[]>>('/admin/applications', { params });
-    return normalizeApplications(res.data) as Application[];
+    return normalizeApplications(res.data as unknown as Record<string, unknown>[]) as unknown as Application[];
   },
 
   async getApplication(id: string, type?: string): Promise<Application> {
     const res = await api.get<never, ApiResponse<Application>>(`/admin/applications/${id}`, { params: { type } });
-    return normalizeApplication(res.data) as Application;
+    return normalizeApplication(res.data as unknown as Record<string, unknown>) as unknown as Application;
   },
 
   async approveApplication(id: string, type: 'driver' | 'restaurant'): Promise<void> {

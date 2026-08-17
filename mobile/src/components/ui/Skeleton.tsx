@@ -30,11 +30,11 @@ export function Skeleton({ width = '100%', height = 16, borderRadius = 8, style 
   );
 }
 
-export function SkeletonCard() {
+export function SkeletonCard({ wide = false }: { wide?: boolean }) {
   return (
     <View
-      style={{ backgroundColor: T.bg, borderRadius: 12, overflow: 'hidden', marginBottom: 12,
-        borderWidth: 1, borderColor: T.border }}
+      style={{ backgroundColor: T.bg, borderRadius: 12, overflow: 'hidden', marginBottom: wide ? 0 : 12,
+        borderWidth: 1, borderColor: T.border, width: wide ? 260 : '100%' }}
     >
       <Skeleton height={140} borderRadius={0} style={{ marginBottom: 0 }} />
       <View style={{ padding: 12 }}>

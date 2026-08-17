@@ -70,18 +70,21 @@ export default function RestaurantDetailScreen() {
 
   useEffect(() => {
     if (!restaurant) return;
+    // Snapshot the narrowed value — TS doesn't carry the `!restaurant` guard's
+    // narrowing into the nested async function's closure over the outer var.
+    const r = restaurant;
 
     let cancelled = false;
 
     async function resolveRestaurantCoords() {
-      if (hasValidCoordinates(restaurant.coordinates)) {
-        setRestaurantLocation(restaurant.coordinates.latitude, restaurant.coordinates.longitude);
+      if (hasValidCoordinates(r.coordinates)) {
+        setRestaurantLocation(r.coordinates.latitude, r.coordinates.longitude);
         return;
       }
 
-      if (!restaurant.address) return;
+      if (!r.address) return;
 
-      const coords = await geocodingService.geocodeAddress(restaurant.address);
+      const coords = await geocodingService.geocodeAddress(r.address);
       if (!cancelled && coords && hasValidCoordinates(coords)) {
         setRestaurantLocation(coords.latitude, coords.longitude);
       }

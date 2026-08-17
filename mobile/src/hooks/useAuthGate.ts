@@ -27,7 +27,10 @@ export function useAuthGate(options: AuthGateOptions = {}) {
       if (user?.role === 'admin') router.replace('/(admin)');
       else if (user?.role === 'driver') router.replace('/(driver)');
       else if (user?.role === 'restaurant') router.replace('/(restaurant)');
-      else router.replace('/(customer)');
+      // '(customer)' has no direct index route (only nested (home)/(orders)/etc.
+      // groups), so it isn't in expo-router's generated typed-route union —
+      // same workaround already used for this exact case in location-setup.tsx.
+      else router.replace('/(customer)' as any);
     }
   }, [isAuthenticated, isLoading, requiredRole, user?.role]);
 
