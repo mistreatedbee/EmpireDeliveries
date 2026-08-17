@@ -13,6 +13,13 @@ import { Colors } from '@/constants/colors';
 
 const COUNTDOWN_SECONDS = 28;
 
+const DEAL_LABELS: Record<NonNullable<AvailableDelivery['dealLabel']>, { text: string; color: string; bg: string }> = {
+  great: { text: 'Great deal', color: Colors.empire.success, bg: '#E8F5E9' },
+  good: { text: 'Good payout', color: '#2E7D32', bg: '#E8F5E9' },
+  fair: { text: 'Fair', color: Colors.empire.warning, bg: '#FFF8E1' },
+  low: { text: 'Low payout', color: Colors.empire.error, bg: '#FFEBEE' },
+};
+
 function RequestCard({
   request,
   countdown,
@@ -56,12 +63,53 @@ function RequestCard({
           <Text style={{ color: '#888', fontSize: 12, marginTop: 2 }} numberOfLines={2}>{request.customerAddress}</Text>
         </View>
 
+        <View style={{ backgroundColor: Colors.surface[100], borderRadius: 14, padding: 12, marginBottom: 12 }}>
+          <Text style={{ color: '#aaa', fontSize: 11, fontWeight: '600', textTransform: 'uppercase', marginBottom: 8 }}>Trip breakdown</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+            <Text style={{ color: '#888', fontSize: 12 }}>You → Restaurant</Text>
+            <Text style={{ fontWeight: '700', color: Colors.empire.black, fontSize: 13 }}>
+              {request.pickupKm != null ? `${request.pickupKm.toFixed(1)} km` : '—'}
+            </Text>
+          </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+            <Text style={{ color: '#888', fontSize: 12 }}>Restaurant → Customer</Text>
+            <Text style={{ fontWeight: '700', color: Colors.empire.black, fontSize: 13 }}>
+              {request.deliveryKm != null ? `${request.deliveryKm.toFixed(1)} km` : '—'}
+            </Text>
+          </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: Colors.surface[200], paddingTop: 8, marginTop: 4 }}>
+            <Text style={{ color: Colors.empire.black, fontSize: 13, fontWeight: '800' }}>Total trip</Text>
+            <Text style={{ fontWeight: '900', color: Colors.gold[600], fontSize: 14 }}>
+              {request.totalKm != null ? `${request.totalKm.toFixed(1)} km` : '—'}
+            </Text>
+          </View>
+        </View>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <View>
+            <Text style={{ color: '#aaa', fontSize: 11, fontWeight: '600', textTransform: 'uppercase' }}>Your payout</Text>
+            <Text style={{ fontWeight: '900', color: Colors.empire.success, fontSize: 22, marginTop: 2 }}>
+              R{request.payout.toFixed(2)}
+            </Text>
+            {request.payoutPerKm != null && (
+              <Text style={{ color: '#888', fontSize: 12, marginTop: 2 }}>
+                R{request.payoutPerKm.toFixed(2)}/km
+              </Text>
+            )}
+          </View>
+          {request.dealLabel && (
+            <View style={{ backgroundColor: DEAL_LABELS[request.dealLabel].bg, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }}>
+              <Text style={{ color: DEAL_LABELS[request.dealLabel].color, fontWeight: '800', fontSize: 12 }}>
+                {DEAL_LABELS[request.dealLabel].text}
+              </Text>
+            </View>
+          )}
+        </View>
+
         <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
           {[
             { label: 'ETA', value: `${request.etaMinutes} min` },
             { label: 'Items', value: String(request.itemCount) },
-            { label: 'Payout', value: `R${request.payout.toFixed(0)}` },
-            ...(request.distanceKm != null ? [{ label: 'Distance', value: `${request.distanceKm.toFixed(1)} km` }] : []),
           ].map((s) => (
             <View key={s.label} style={{ flex: 1, backgroundColor: Colors.surface[100], borderRadius: 14, padding: 10, alignItems: 'center' }}>
               <Text style={{ fontWeight: '800', color: Colors.empire.black, fontSize: 14 }}>{s.value}</Text>

@@ -27,10 +27,14 @@ function OrderCard({ order, onCancel, onRate, onReorder }: { order: Order; onCan
   const isActive = STATUS_MAP.active.includes(order.status);
   const canCancel = canCancelOrderStatus(order.status);
   const canReorder = order.status === 'delivered' || order.status === 'cancelled';
+  const needsRating = order.status === 'delivered' && !order.rating;
 
   return (
     <Pressable
-      onPress={() => isActive ? router.push(`/(customer)/(orders)/tracking/${order.id}`) : undefined}
+      onPress={() => {
+        if (isActive) router.push(`/(customer)/(orders)/tracking/${order.id}`);
+        else if (needsRating && onRate) onRate();
+      }}
       style={{ backgroundColor: T.bg, borderRadius: 12, padding: 16, marginBottom: 10, borderWidth: 1, borderColor: T.border }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 }}>
@@ -67,14 +71,23 @@ function OrderCard({ order, onCancel, onRate, onReorder }: { order: Order; onCan
           )}
         </View>
       )}
-      {order.status === 'delivered' && !order.rating && onRate && (
+      {needsRating && onRate && (
         <Pressable
-          onPress={onRate}
+          onPress={(e) => { e.stopPropagation?.(); onRate(); }}
           style={{ marginTop: 10, backgroundColor: T.goldBg, borderRadius: 10, padding: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: T.gold }}
         >
           <Star size={14} color={T.gold} />
-          <Text style={{ color: T.gold, fontWeight: '700', fontSize: 13 }}>Rate this order</Text>
+          <Text style={{ color: T.gold, fontWeight: '700', fontSize: 13 }}>Tap to rate your order & driver</Text>
         </Pressable>
+      )}
+      {order.status === 'delivered' && order.rating != null && (
+        <View style={{ marginTop: 10, backgroundColor: T.surface, borderRadius: 10, padding: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+          <Star size={14} color={T.gold} fill={T.gold} />
+          <Text style={{ color: T.textSec, fontWeight: '600', fontSize: 13 }}>
+            Rated {order.rating}★{order.driverRating ? ` · Driver ${order.driverRating}★` : ''}
+            {order.tipAmount && order.tipAmount > 0 ? ` · R${order.tipAmount} tip` : ''}
+          </Text>
+        </View>
       )}
       {canReorder && onReorder && (
         <Pressable

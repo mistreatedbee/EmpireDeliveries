@@ -63,9 +63,18 @@ export const orderService = {
     return normalizeOrder(res.data);
   },
 
-  async rate(id: string, rating: number, review?: string): Promise<Order> {
-    const res = await api.post<never, ApiResponse<Order>>(`/orders/${id}/rate`, { rating, review });
-    return res.data;
+  async rate(
+    id: string,
+    payload: {
+      rating: number;
+      review?: string;
+      driverRating?: number;
+      driverReview?: string;
+      tipAmount?: number;
+    },
+  ): Promise<Order> {
+    const res = await api.post<never, ApiResponse<Record<string, unknown>>>(`/orders/${id}/rate`, payload);
+    return normalizeOrder(res.data);
   },
 
   async validateCoupon(code: string): Promise<CouponValidation> {

@@ -7,6 +7,7 @@ export interface AdminStats {
   orders: { today: number; revenueToday: number };
   pendingDriverApplications: number;
   pendingRestaurantApplications: number;
+  pendingWithdrawals: number;
 }
 
 export interface Application {
@@ -66,6 +67,80 @@ export interface AdminUser {
   createdAt: string;
 }
 
+export interface WithdrawalRequest {
+  id: string;
+  entityType: 'driver' | 'restaurant';
+  driverId?: string | null;
+  restaurantId?: string | null;
+  amount: number;
+  status: string;
+  bankName?: string | null;
+  bankAccountNo?: string | null;
+  bankAccountType?: string | null;
+  bankHolderName?: string | null;
+  adminNotes?: string | null;
+  createdAt: string;
+  requesterName?: string | null;
+  requesterEmail?: string | null;
+  requesterPhone?: string | null;
+  businessName?: string | null;
+}
+
+export interface AdminDriverOverview {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  approvalStatus: string;
+  walletBalance: number;
+  rating: number;
+  totalTrips: number;
+  isOnline: boolean;
+  tripsToday: number;
+  earningsToday: number;
+  earningsTotal: number;
+  pendingWithdrawal?: number | null;
+  pendingWithdrawalId?: string | null;
+  bankName?: string | null;
+  bankAccountNo?: string | null;
+  bankHolderName?: string | null;
+}
+
+export interface AdminRestaurantOverview {
+  id: string;
+  name: string;
+  address?: string;
+  isActive: boolean;
+  walletBalance: number;
+  ownerName: string;
+  ownerEmail: string;
+  ownerPhone?: string;
+  approvalStatus: string;
+  ordersToday: number;
+  revenueToday: number;
+  ordersTotal: number;
+  pendingWithdrawal?: number | null;
+  pendingWithdrawalId?: string | null;
+  bankName?: string | null;
+  bankAccountNo?: string | null;
+  bankHolderName?: string | null;
+}
+
+export interface AdminCustomerOverview {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  approvalStatus: string;
+  walletBalance: number;
+  ordersTotal: number;
+  ordersToday: number;
+  spentTotal: number;
+  createdAt: string;
+}
+
 export const adminService = {
   async getStats(): Promise<AdminStats> {
     const res = await api.get<never, ApiResponse<AdminStats>>('/admin/stats');
@@ -105,6 +180,34 @@ export const adminService = {
 
   async changeUserRole(id: string, role: 'customer' | 'driver' | 'restaurant' | 'admin'): Promise<void> {
     await api.put(`/admin/users/${id}/role`, { role });
+  },
+
+  async getWithdrawals(params?: { status?: string; entityType?: string }): Promise<WithdrawalRequest[]> {
+    const res = await api.get<never, ApiResponse<WithdrawalRequest[]>>('/admin/withdrawals', { params });
+    return res.data ?? [];
+  },
+
+  async approveWithdrawal(id: string, notes?: string): Promise<void> {
+    await api.put(`/admin/withdrawals/${id}/approve`, { notes });
+  },
+
+  async rejectWithdrawal(id: string, reason?: string): Promise<void> {
+    await api.put(`/admin/withdrawals/${id}/reject`, { reason });
+  },
+
+  async getDriversOverview(): Promise<AdminDriverOverview[]> {
+    const res = await api.get<never, ApiResponse<AdminDriverOverview[]>>('/admin/drivers');
+    return res.data ?? [];
+  },
+
+  async getRestaurantsOverview(): Promise<AdminRestaurantOverview[]> {
+    const res = await api.get<never, ApiResponse<AdminRestaurantOverview[]>>('/admin/restaurants');
+    return res.data ?? [];
+  },
+
+  async getCustomersOverview(search?: string): Promise<AdminCustomerOverview[]> {
+    const res = await api.get<never, ApiResponse<AdminCustomerOverview[]>>('/admin/customers', { params: { search } });
+    return res.data ?? [];
   },
 };
 

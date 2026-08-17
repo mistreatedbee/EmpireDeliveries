@@ -146,14 +146,14 @@ export default function OrderTrackingScreen() {
   }, [orderId, user?.id, order?.restaurantId, tracking?.driver?.id]);
 
   useEffect(() => {
-    if (status === 'delivered' && !ratePrompted) {
+    if (status === 'delivered' && !ratePrompted && !order?.rating) {
       setRatePrompted(true);
       const t = setTimeout(() => {
         router.push({ pathname: '/(modals)/rate-order', params: { orderId } });
       }, 1500);
       return () => clearTimeout(t);
     }
-  }, [status, ratePrompted, orderId]);
+  }, [status, ratePrompted, orderId, order?.rating]);
 
   useEffect(() => {
     const loop = Animated.loop(
@@ -691,6 +691,18 @@ export default function OrderTrackingScreen() {
               >
                 Cancel Order
               </Button>
+            )}
+
+            {status === 'delivered' && !order?.rating && (
+              <View style={{ marginTop: canCancel ? 12 : 0 }}>
+                <Button
+                  size="lg"
+                  fullWidth
+                  onPress={() => router.push({ pathname: '/(modals)/rate-order', params: { orderId } })}
+                >
+                  Rate order & driver
+                </Button>
+              </View>
             )}
           </>
         )}

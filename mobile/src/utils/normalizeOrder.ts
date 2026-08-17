@@ -70,8 +70,12 @@ export function normalizeOrder(raw: RawRecord): Order {
     cancelReason: raw.cancelReason != null ? String(raw.cancelReason) : raw.cancel_reason != null ? String(raw.cancel_reason) : undefined,
     cancellationFee: raw.cancellationFee != null ? toNumber(raw.cancellationFee) : raw.cancellation_fee != null ? toNumber(raw.cancellation_fee) : undefined,
     cancelledBy: raw.cancelledBy != null ? String(raw.cancelledBy) : raw.cancelled_by != null ? String(raw.cancelled_by) : undefined,
-    rating: raw.rating != null ? toNumber(raw.rating) : undefined,
-    review: raw.review != null ? String(raw.review) : undefined,
+    rating: raw.rating != null ? toNumber(raw.rating) : raw.restaurant_rating != null ? toNumber(raw.restaurant_rating) : undefined,
+    review: raw.review != null ? String(raw.review) : raw.restaurant_review != null ? String(raw.restaurant_review) : undefined,
+    driverId: raw.driverId != null ? String(raw.driverId) : raw.driver_id != null ? String(raw.driver_id) : undefined,
+    driverRating: raw.driverRating != null ? toNumber(raw.driverRating) : raw.driver_review_rating != null ? toNumber(raw.driver_review_rating) : undefined,
+    driverReview: raw.driverReview != null ? String(raw.driverReview) : raw.driver_review_text != null ? String(raw.driver_review_text) : undefined,
+    tipAmount: raw.tipAmount != null ? toNumber(raw.tipAmount) : raw.tip_amount != null ? toNumber(raw.tip_amount) : undefined,
   };
 }
 

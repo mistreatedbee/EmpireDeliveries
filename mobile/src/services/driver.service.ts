@@ -40,8 +40,13 @@ export interface AvailableDelivery {
   customerAddress: string;
   customerPhone: string;
   itemCount: number;
+  pickupKm?: number | null;
+  deliveryKm?: number | null;
+  totalKm?: number | null;
   distanceKm?: number | null;
   payout: number;
+  payoutPerKm?: number | null;
+  dealLabel?: 'great' | 'good' | 'fair' | 'low' | null;
   etaMinutes: number;
 }
 

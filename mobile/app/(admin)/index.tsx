@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Users, Truck, Clock, ShoppingBag, CheckCircle, XCircle, LogOut } from 'lucide-react-native';
+import { Users, Truck, Clock, ShoppingBag, CheckCircle, XCircle, LogOut, Banknote } from 'lucide-react-native';
 import { adminService } from '@/services/admin.service';
 import { useAuthStore } from '@/stores/authStore';
 import { Colors } from '@/constants/colors';
@@ -96,12 +96,27 @@ export default function AdminDashboard() {
         ) : (
           <>
             <Text style={{ color: '#888', fontSize: 11, fontWeight: '700', letterSpacing: 1.5, marginBottom: 12 }}>PLATFORM OVERVIEW</Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 28 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16 }}>
               <StatCard icon={Users} label="Total Users" value={stats?.users.total ?? 0} color={Colors.gold[500]} />
               <StatCard icon={Truck} label="Active Drivers" value={stats?.users.drivers ?? 0} color="#4ade80" />
               <StatCard icon={Clock} label="Pending Approval" value={stats?.users.pendingApproval ?? 0} color="#f97316" />
               <StatCard icon={ShoppingBag} label="Orders Today" value={stats?.orders.today ?? 0} color="#60a5fa" />
             </View>
+
+            {(stats?.pendingWithdrawals ?? 0) > 0 && (
+              <Pressable
+                onPress={() => router.push('/(admin)/payouts')}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#f9731622', borderRadius: 14, padding: 16, marginBottom: 28, borderWidth: 1, borderColor: '#f9731644' }}
+              >
+                <Banknote size={22} color="#f97316" />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: '#f97316', fontWeight: '800', fontSize: 15 }}>
+                    {stats?.pendingWithdrawals} payout request{(stats?.pendingWithdrawals ?? 0) !== 1 ? 's' : ''} waiting
+                  </Text>
+                  <Text style={{ color: '#888', fontSize: 12, marginTop: 2 }}>Tap to review driver & restaurant withdrawals</Text>
+                </View>
+              </Pressable>
+            )}
           </>
         )}
 

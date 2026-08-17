@@ -2,7 +2,15 @@ import { Tabs } from 'expo-router';
 import React from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LayoutDashboard, ClipboardList, Users, MessageCircle } from 'lucide-react-native';
+import {
+  LayoutDashboard,
+  ClipboardList,
+  Truck,
+  Store,
+  Users,
+  Banknote,
+  MessageCircle,
+} from 'lucide-react-native';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import { Colors } from '@/constants/colors';
 import { tabBarStyle } from '@/utils/tabBar';
@@ -29,37 +37,59 @@ export default function AdminLayout() {
         }),
         tabBarActiveTintColor: Colors.gold[500],
         tabBarInactiveTintColor: '#666',
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Dashboard',
-          tabBarIcon: ({ color }) => <LayoutDashboard size={22} color={color} />,
+          title: 'Home',
+          tabBarIcon: ({ color }) => <LayoutDashboard size={20} color={color} />,
         }}
       />
       <Tabs.Screen
         name="applications"
         options={{
-          title: 'Applications',
-          tabBarIcon: ({ color }) => <ClipboardList size={22} color={color} />,
+          title: 'Apps',
+          tabBarIcon: ({ color }) => <ClipboardList size={20} color={color} />,
         }}
       />
       <Tabs.Screen
-        name="users"
+        name="drivers"
         options={{
-          title: 'Users',
-          tabBarIcon: ({ color }) => <Users size={22} color={color} />,
+          title: 'Drivers',
+          tabBarIcon: ({ color }) => <Truck size={20} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="restaurants"
+        options={{
+          title: 'Venues',
+          tabBarIcon: ({ color }) => <Store size={20} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="customers"
+        options={{
+          title: 'Customers',
+          tabBarIcon: ({ color }) => <Users size={20} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="payouts"
+        options={{
+          title: 'Payouts',
+          tabBarIcon: ({ color }) => <Banknote size={20} color={color} />,
         }}
       />
       <Tabs.Screen
         name="support-inbox"
         options={{
           title: 'Support',
-          tabBarIcon: ({ color }) => <MessageCircle size={22} color={color} />,
+          tabBarIcon: ({ color }) => <MessageCircle size={20} color={color} />,
         }}
       />
+      <Tabs.Screen name="users" options={{ href: null }} />
     </Tabs>
   );
 }

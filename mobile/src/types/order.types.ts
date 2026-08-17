@@ -118,6 +118,10 @@ export interface Order {
   cancelledBy?: 'customer' | 'restaurant' | string;
   rating?: number;
   review?: string;
+  driverId?: string;
+  driverRating?: number;
+  driverReview?: string;
+  tipAmount?: number;
 }
 
 export interface CouponValidation {
