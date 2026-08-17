@@ -48,6 +48,27 @@ export interface AuthResponse {
   tokens: AuthTokens;
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// The backend can be asleep (hosting free-tier idle spin-down) and returns a
+// 502/503 from the proxy for the first request or two while it wakes up —
+// retry those specifically (not real errors like bad credentials) with a
+// short backoff before giving up, so login doesn't hard-fail on cold start.
+const COLD_START_CODES = new Set(['HTTP_502', 'HTTP_503']);
+
+async function withColdStartRetry<T>(fn: () => Promise<T>, delaysMs = [3000, 5000]): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    const code = (err as { code?: string }).code;
+    if (!delaysMs.length || !code || !COLD_START_CODES.has(code)) throw err;
+    await sleep(delaysMs[0]);
+    return withColdStartRetry(fn, delaysMs.slice(1));
+  }
+}
+
 export const authService = {
   // Register with InsForge — triggers email OTP automatically
   async register(payload: RegisterPayload): Promise<{ requireEmailVerification: boolean }> {
@@ -85,7 +106,7 @@ export const authService = {
 
     let user: User;
     try {
-      user = await expressApi.get<never, User>('/auth/me', { headers: authHeaders });
+      user = await withColdStartRetry(() => expressApi.get<never, User>('/auth/me', { headers: authHeaders }));
     } catch (err) {
       const appErr = err as { code?: string };
       if (appErr.code === 'USER_NOT_FOUND') {
