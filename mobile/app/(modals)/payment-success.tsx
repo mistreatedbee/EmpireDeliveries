@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, Animated, Easing, ActivityIndicator } from 'react-native';
+import { View, Text, Animated, Easing, ActivityIndicator, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Check, ChefHat, CreditCard, Store } from 'lucide-react-native';
@@ -206,7 +206,11 @@ export default function PaymentSuccessScreen() {
 
   return (
     <ScreenWrapper bg="white">
-      <View style={{ flex: 1, paddingHorizontal: 24, paddingTop: 48, paddingBottom: 24 }}>
+      <View style={{ flex: 1 }}>
+        <ScrollView
+          contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 48, paddingBottom: 24, flexGrow: 1 }}
+          showsVerticalScrollIndicator={false}
+        >
         <Animated.View style={{ alignItems: 'center', opacity: heroOpacity, transform: [{ scale: heroScale }] }}>
           <View style={{ width: 120, height: 120, alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
             <Animated.View
@@ -303,7 +307,9 @@ export default function PaymentSuccessScreen() {
           </View>
         )}
 
-        <View style={{ marginTop: 'auto', gap: 12 }}>
+        </ScrollView>
+
+        <View style={{ paddingHorizontal: 24, paddingBottom: 24, paddingTop: 12, gap: 12 }}>
           {activeOrderId && (
             <Button
               size="lg"
