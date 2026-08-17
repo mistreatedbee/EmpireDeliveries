@@ -58,7 +58,7 @@ function sleep(ms: number): Promise<void> {
 // short backoff before giving up, so login doesn't hard-fail on cold start.
 const COLD_START_CODES = new Set(['HTTP_502', 'HTTP_503']);
 
-async function withColdStartRetry<T>(fn: () => Promise<T>, delaysMs = [3000, 5000]): Promise<T> {
+async function withColdStartRetry<T>(fn: () => Promise<T>, delaysMs = [3000, 6000, 10000]): Promise<T> {
   try {
     return await fn();
   } catch (err) {

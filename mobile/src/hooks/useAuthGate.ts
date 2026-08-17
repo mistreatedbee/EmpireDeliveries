@@ -10,12 +10,18 @@ interface AuthGateOptions {
 
 /** Shared auth bootstrap for tab layouts — avoids stuck loading when hydration lags. */
 export function useAuthGate(options: AuthGateOptions = {}) {
-  const { isAuthenticated, isLoading, user, hydrate } = useAuthStore();
+  const { isAuthenticated, isLoading, user } = useAuthStore();
   const { requiredRole } = options;
 
-  useEffect(() => {
-    void hydrate();
-  }, [hydrate]);
+  // Do NOT re-run hydrate() here. AuthBootstrap (app/_layout.tsx) already
+  // hydrates once at app launch, and login's setAuth() already puts fully
+  // correct state in the store synchronously before navigating here. Calling
+  // hydrate() again on every role-gated layout mount raced that fresh state:
+  // it re-reads the token (SecureStore) and user (AsyncStorage) as two
+  // independent async reads, and if that read landed before/between the
+  // just-completed writes, `user` could transiently resolve to null while
+  // `isAuthenticated` stayed true — which then fails the requiredRole check
+  // below and bounces the user straight back out immediately after login.
 
   useEffect(() => {
     if (isLoading) return;
