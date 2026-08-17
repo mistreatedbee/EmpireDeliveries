@@ -102,27 +102,26 @@ export default function RestaurantOrders() {
         </View>
       </Modal>
 
-      <View style={{ backgroundColor: Colors.empire.black, paddingHorizontal: 20, paddingTop: 56, paddingBottom: 8 }}>
-        <Text style={{ color: '#fff', fontSize: 22, fontWeight: '900' }}>Orders</Text>
+      {/* Single header block — title + filter pills share one compact bar instead
+          of two stacked full-height black panels. */}
+      <View style={{ backgroundColor: Colors.empire.black, paddingHorizontal: 20, paddingTop: 56, paddingBottom: 10, borderBottomLeftRadius: 20, borderBottomRightRadius: 20 }}>
+        <Text style={{ color: '#fff', fontSize: 20, fontWeight: '900', marginBottom: 10 }}>Orders</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 8 }}
+        >
+          {FILTERS.map((f) => (
+            <Pressable
+              key={f.id}
+              onPress={() => setFilter(f.id)}
+              style={{ paddingVertical: 5, paddingHorizontal: 14, borderRadius: 20, backgroundColor: filter === f.id ? Colors.gold[500] : Colors.empire.charcoal }}
+            >
+              <Text style={{ color: filter === f.id ? Colors.empire.black : '#aaa', fontWeight: '700', fontSize: 12 }}>{f.label}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
       </View>
-
-      {/* Filter pills */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 8, gap: 8 }}
-        style={{ backgroundColor: Colors.empire.black, borderBottomLeftRadius: 20, borderBottomRightRadius: 20 }}
-      >
-        {FILTERS.map((f) => (
-          <Pressable
-            key={f.id}
-            onPress={() => setFilter(f.id)}
-            style={{ paddingVertical: 6, paddingHorizontal: 16, borderRadius: 20, backgroundColor: filter === f.id ? Colors.gold[500] : Colors.empire.charcoal }}
-          >
-            <Text style={{ color: filter === f.id ? Colors.empire.black : '#aaa', fontWeight: '700', fontSize: 13 }}>{f.label}</Text>
-          </Pressable>
-        ))}
-      </ScrollView>
 
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
         {isLoading && <ActivityIndicator color={Colors.gold[500]} style={{ marginTop: 20 }} />}
