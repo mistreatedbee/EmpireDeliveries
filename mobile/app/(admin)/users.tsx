@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, ShieldOff, ShieldCheck, ChevronDown, Users } from 'lucide-react-native';
+import { Search, ShieldOff, ShieldCheck, ChevronDown, Users, UserCog } from 'lucide-react-native';
 import { adminService, AdminUser } from '@/services/admin.service';
 import { Button, Input, Badge, SkeletonList, EmptyState } from '@/components/empire';
 import type { BadgeVariant } from '@/components/empire';
@@ -10,6 +10,7 @@ import { Colors } from '@/constants/colors';
 import { getUserErrorMessage } from '@/utils/errorHandler';
 
 const ROLES = ['all', 'customer', 'driver', 'restaurant', 'admin'];
+const CHANGEABLE_ROLES = ['customer', 'driver', 'restaurant', 'admin'] as const;
 
 function roleBadgeVariant(role: string): BadgeVariant {
   switch (role) {
@@ -29,12 +30,15 @@ function statusBadgeVariant(status: string): BadgeVariant {
   }
 }
 
-function UserRow({ user, onSuspend, onReactivate, loading }: {
+function UserRow({ user, onSuspend, onReactivate, onChangeRole, loading }: {
   user: AdminUser;
   onSuspend: () => void;
   onReactivate: () => void;
+  onChangeRole: (role: typeof CHANGEABLE_ROLES[number]) => void;
   loading: boolean;
 }) {
+  const [showRoleMenu, setShowRoleMenu] = useState(false);
+
   return (
     <View className="bg-t-surface rounded-2xl p-4 mb-3 border border-t-border">
       <View className="flex-row items-start justify-between mb-2">
@@ -61,6 +65,51 @@ function UserRow({ user, onSuspend, onReactivate, loading }: {
         Joined {new Date(user.createdAt).toLocaleDateString('en-ZA')}
         {user.isVerified ? '  ·  Verified' : '  ·  Unverified'}
       </Text>
+
+      <View style={{ position: 'relative', marginBottom: 8 }}>
+        <Button
+          variant="secondary"
+          size="sm"
+          fullWidth
+          onPress={() => setShowRoleMenu((v) => !v)}
+          disabled={loading}
+          leftIcon={<UserCog size={14} color={Colors.gold[500]} />}
+        >
+          Change Role
+        </Button>
+        {showRoleMenu && (
+          <View
+            className="bg-t-surface rounded-2xl border border-t-border overflow-hidden"
+            style={{ marginTop: 6 }}
+          >
+            {CHANGEABLE_ROLES.map((r, i) => (
+              <Pressable
+                key={r}
+                onPress={() => { setShowRoleMenu(false); onChangeRole(r); }}
+                disabled={r === user.role}
+                style={{
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                  borderBottomWidth: i < CHANGEABLE_ROLES.length - 1 ? 1 : 0,
+                  borderBottomColor: '#2a2a2a',
+                  opacity: r === user.role ? 0.4 : 1,
+                }}
+              >
+                <Text
+                  style={{
+                    color: r === user.role ? '#888' : '#ccc',
+                    fontFamily: 'Inter_600SemiBold',
+                    fontSize: 13,
+                    textTransform: 'capitalize',
+                  }}
+                >
+                  {r} {r === user.role ? '(current)' : ''}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
+      </View>
 
       {user.approvalStatus !== 'suspended' ? (
         <Button
@@ -127,6 +176,16 @@ export default function UsersScreen() {
     onError: (err) => showToast(getUserErrorMessage(err, 'Failed to reactivate user. Please try again.'), 'error'),
   });
 
+  const changeRoleMutation = useMutation({
+    mutationFn: ({ id, role }: { id: string; role: 'customer' | 'driver' | 'restaurant' | 'admin' }) =>
+      adminService.changeUserRole(id, role),
+    onSuccess: (_data, { role }) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      showToast(`Role changed to ${role}`, 'success');
+    },
+    onError: (err) => showToast(getUserErrorMessage(err, 'Failed to change role. Please try again.'), 'error'),
+  });
+
   const handleSuspend = (user: AdminUser) => {
     setPendingSuspendId(user.id);
     setSuspendReason('');
@@ -137,7 +196,7 @@ export default function UsersScreen() {
     suspendMutation.mutate({ id: pendingSuspendId, reason: suspendReason.trim() || undefined });
   };
 
-  const mutating = suspendMutation.isPending || reactivateMutation.isPending;
+  const mutating = suspendMutation.isPending || reactivateMutation.isPending || changeRoleMutation.isPending;
   const users = data?.data ?? [];
   const total = data?.total ?? 0;
   const totalPages = Math.ceil(total / 20);
@@ -289,6 +348,7 @@ export default function UsersScreen() {
                 user={u}
                 onSuspend={() => handleSuspend(u)}
                 onReactivate={() => reactivateMutation.mutate(u.id)}
+                onChangeRole={(role) => changeRoleMutation.mutate({ id: u.id, role })}
                 loading={mutating}
               />
             ))

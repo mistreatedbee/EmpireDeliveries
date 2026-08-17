@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert } from 'react-native';
+import { router } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Users, Truck, Clock, ShoppingBag, CheckCircle, XCircle } from 'lucide-react-native';
+import { Users, Truck, Clock, ShoppingBag, CheckCircle, XCircle, LogOut } from 'lucide-react-native';
 import { adminService } from '@/services/admin.service';
 import { useAuthStore } from '@/stores/authStore';
 import { Colors } from '@/constants/colors';
@@ -18,8 +19,15 @@ function StatCard({ icon: Icon, label, value, color }: { icon: any; label: strin
 }
 
 export default function AdminDashboard() {
-  const { user } = useAuthStore();
+  const { user, clearAuth } = useAuthStore();
   const queryClient = useQueryClient();
+
+  const handleLogout = () => {
+    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Sign Out', style: 'destructive', onPress: async () => { await clearAuth(); router.replace('/(auth)/login'); } },
+    ]);
+  };
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['admin', 'stats'],
@@ -65,12 +73,21 @@ export default function AdminDashboard() {
 
   return (
     <View style={{ flex: 1, backgroundColor: Colors.empire.black }}>
-      <View style={{ paddingTop: 56, paddingHorizontal: 24, paddingBottom: 20, borderBottomWidth: 1, borderBottomColor: Colors.empire.charcoal }}>
-        <Text style={{ color: '#888', fontSize: 12, fontWeight: '700', letterSpacing: 2 }}>ADMIN PORTAL</Text>
-        <Text style={{ color: '#fff', fontSize: 24, fontWeight: '900', marginTop: 2 }}>Dashboard</Text>
-        <Text style={{ color: '#666', fontSize: 13, marginTop: 2 }}>
-          {user?.firstName} {user?.lastName}
-        </Text>
+      <View style={{ paddingTop: 56, paddingHorizontal: 24, paddingBottom: 20, borderBottomWidth: 1, borderBottomColor: Colors.empire.charcoal, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <View>
+          <Text style={{ color: '#888', fontSize: 12, fontWeight: '700', letterSpacing: 2 }}>ADMIN PORTAL</Text>
+          <Text style={{ color: '#fff', fontSize: 24, fontWeight: '900', marginTop: 2 }}>Dashboard</Text>
+          <Text style={{ color: '#666', fontSize: 13, marginTop: 2 }}>
+            {user?.firstName} {user?.lastName}
+          </Text>
+        </View>
+        <Pressable
+          onPress={handleLogout}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: Colors.empire.charcoal, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: '#2a2a2a' }}
+        >
+          <LogOut size={14} color="#ef4444" />
+          <Text style={{ color: '#ef4444', fontWeight: '700', fontSize: 12 }}>Sign Out</Text>
+        </Pressable>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 40 }}>

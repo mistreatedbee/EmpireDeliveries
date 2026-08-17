@@ -102,6 +102,10 @@ export const adminService = {
   async reactivateUser(id: string): Promise<void> {
     await api.put(`/admin/users/${id}/reactivate`);
   },
+
+  async changeUserRole(id: string, role: 'customer' | 'driver' | 'restaurant' | 'admin'): Promise<void> {
+    await api.put(`/admin/users/${id}/role`, { role });
+  },
 };
 
 export interface MyApplicationStatus {
