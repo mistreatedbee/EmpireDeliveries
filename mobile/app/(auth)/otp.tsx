@@ -49,8 +49,28 @@ export default function OtpScreen() {
         router.replace({ pathname: '/(auth)/reset-password', params: { token: result.token } } as any);
         return;
       }
-      const { user, tokens } = result;
+      let { user } = result;
+      const { tokens } = result;
       await setAuth(user, tokens.accessToken, tokens.refreshToken);
+
+      // Defensive re-assertion: /auth/sync's role assignment only applies
+      // when it's the call that actually creates the user row. If any other
+      // authenticated request for this email raced ahead of it (e.g. the
+      // requireAuth middleware's own auto-create-on-first-sight path, which
+      // has no role context and always defaults to 'customer'), /auth/sync
+      // silently returns that existing customer-role row instead — the
+      // requested role never takes effect. Explicitly re-assert it via the
+      // dedicated role-upgrade endpoint so this can't silently fall through.
+      if (role && role !== 'customer' && user.role !== role) {
+        try {
+          user = await authService.syncRole(role);
+          await setAuth(user, tokens.accessToken, tokens.refreshToken);
+        } catch {
+          // Non-fatal — worst case the user hits the same role error later
+          // and can retry; don't block navigation on this best-effort fix-up.
+        }
+      }
+
       const { otp: _otp, nextRoute: _nr, purpose: _purpose, ...forwardParams } = allParams;
       router.replace({
         pathname: (nextRoute as any) ?? '/(auth)/location-setup',
