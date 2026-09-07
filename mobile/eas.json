@@ -19,6 +19,7 @@
     },
     "internal": {
       "distribution": "store",
+      "environment": "production",
       "android": {
         "buildType": "app-bundle"
       },
