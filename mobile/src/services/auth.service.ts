@@ -14,16 +14,26 @@ import {
 import { parseApiError } from '@/utils/errorHandler';
 
 // InsForge auth API — handles email OTP, login, password reset.
-// The anon key is required by InsForge's sign-up endpoint (and sent by
-// default for all unauthenticated calls, matching @insforge/sdk's own
-// behavior) — without it, /api/auth/users returns 401 "No token provided".
+// Only attach the anonymous bearer token when an actual anon key is configured;
+// otherwise the client would emit `Authorization: Bearer ` and the server
+// would turn that into the misleading 'Token not Provided' response.
 const insforgeApi = axios.create({
   baseURL: Config.INSFORGE_URL,
   timeout: 15_000,
   headers: {
     'Content-Type': 'application/json',
-    Authorization: `Bearer ${Config.INSFORGE_ANON_KEY}`,
   },
+});
+
+insforgeApi.interceptors.request.use((config) => {
+  const anonKey = Config.INSFORGE_ANON_KEY?.trim();
+  if (!anonKey) {
+    delete config.headers.Authorization;
+    return config;
+  }
+
+  config.headers.Authorization = `Bearer ${anonKey}`;
+  return config;
 });
 
 insforgeApi.interceptors.response.use(

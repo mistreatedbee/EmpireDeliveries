@@ -61,6 +61,9 @@ const KNOWN_PLAIN_MESSAGES: Record<string, string> = {
   'User already exists': 'An account with this email already exists. Please log in instead.',
   'Invalid credentials': 'Incorrect email or password.',
   'Invalid token': 'Your session expired. Please sign in again.',
+  'No token provided': 'The signup server is missing the InsForge anonymous key. Set EXPO_PUBLIC_INSFORGE_ANON_KEY in the mobile environment.',
+  'Token not Provided': 'The signup server is missing the InsForge anonymous key. Set EXPO_PUBLIC_INSFORGE_ANON_KEY in the mobile environment.',
+  'Token not provided': 'The signup server is missing the InsForge anonymous key. Set EXPO_PUBLIC_INSFORGE_ANON_KEY in the mobile environment.',
 };
 
 function looksLikeErrorCode(value: string): boolean {

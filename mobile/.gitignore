@@ -21,6 +21,9 @@ android/local.properties
 android/.cxx/
 *.keystore
 !debug.keystore
+*.jks
+credentials.json
+credentials/
 
 # iOS native build artifacts
 ios/Pods/

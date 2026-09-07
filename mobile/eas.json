@@ -21,6 +21,10 @@
       "distribution": "store",
       "android": {
         "buildType": "app-bundle"
+      },
+      "env": {
+        "EAS_PROJECT_ID": "9ef1f2ef-eb72-4aac-b9a5-342f0fdff1a6",
+        "EAS_PROJECT_SLUG": "emp"
       }
     },
     "production": {
@@ -28,6 +32,10 @@
       "distribution": "store",
       "android": {
         "buildType": "app-bundle"
+      },
+      "env": {
+        "EAS_PROJECT_ID": "9ef1f2ef-eb72-4aac-b9a5-342f0fdff1a6",
+        "EAS_PROJECT_SLUG": "emp"
       }
     }
   },
