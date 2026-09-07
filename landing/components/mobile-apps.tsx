@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "motion/react"
-import { Apple, Play, Home, Navigation, CreditCard, Star, Bike, Search } from "lucide-react"
+import { Apple, Play, Home, Navigation, CreditCard, Star, Bike, Search, Download } from "lucide-react"
 import { Reveal } from "@/components/reveal"
+import { APK_DOWNLOAD_URL, APK_VERSION, APP_STORE_URL, PLAY_STORE_URL } from "@/lib/appLinks"
 
 const screens = [
   {
@@ -138,26 +139,61 @@ export function MobileApps() {
           <Reveal delay={0.15}>
             <div className="mt-8 flex flex-wrap gap-3">
               <a
-                href="#download"
-                className="inline-flex items-center gap-3 rounded-2xl bg-foreground px-5 py-3 text-background transition-transform hover:-translate-y-0.5"
+                href={APK_DOWNLOAD_URL}
+                className="inline-flex items-center gap-3 rounded-2xl bg-primary px-5 py-3 text-primary-foreground transition-transform hover:-translate-y-0.5"
               >
-                <Apple className="size-6" />
+                <Download className="size-6" />
                 <span className="text-left">
-                  <span className="block text-[10px] leading-none opacity-70">Download on the</span>
-                  <span className="block text-sm font-semibold">App Store</span>
+                  <span className="block text-[10px] leading-none opacity-80">Direct download · v{APK_VERSION}</span>
+                  <span className="block text-sm font-semibold">Download APK</span>
                 </span>
               </a>
-              <a
-                href="#download"
-                className="inline-flex items-center gap-3 rounded-2xl bg-foreground px-5 py-3 text-background transition-transform hover:-translate-y-0.5"
-              >
-                <Play className="size-6" />
-                <span className="text-left">
-                  <span className="block text-[10px] leading-none opacity-70">Get it on</span>
-                  <span className="block text-sm font-semibold">Google Play</span>
+
+              {PLAY_STORE_URL ? (
+                <a
+                  href={PLAY_STORE_URL}
+                  className="inline-flex items-center gap-3 rounded-2xl bg-foreground px-5 py-3 text-background transition-transform hover:-translate-y-0.5"
+                >
+                  <Play className="size-6" />
+                  <span className="text-left">
+                    <span className="block text-[10px] leading-none opacity-70">Get it on</span>
+                    <span className="block text-sm font-semibold">Google Play</span>
+                  </span>
+                </a>
+              ) : (
+                <span className="inline-flex cursor-not-allowed items-center gap-3 rounded-2xl border border-border bg-card px-5 py-3 text-muted-foreground opacity-60">
+                  <Play className="size-6" />
+                  <span className="text-left">
+                    <span className="block text-[10px] leading-none opacity-70">Coming soon on</span>
+                    <span className="block text-sm font-semibold">Google Play</span>
+                  </span>
                 </span>
-              </a>
+              )}
+
+              {APP_STORE_URL ? (
+                <a
+                  href={APP_STORE_URL}
+                  className="inline-flex items-center gap-3 rounded-2xl bg-foreground px-5 py-3 text-background transition-transform hover:-translate-y-0.5"
+                >
+                  <Apple className="size-6" />
+                  <span className="text-left">
+                    <span className="block text-[10px] leading-none opacity-70">Download on the</span>
+                    <span className="block text-sm font-semibold">App Store</span>
+                  </span>
+                </a>
+              ) : (
+                <span className="inline-flex cursor-not-allowed items-center gap-3 rounded-2xl border border-border bg-card px-5 py-3 text-muted-foreground opacity-60">
+                  <Apple className="size-6" />
+                  <span className="text-left">
+                    <span className="block text-[10px] leading-none opacity-70">Coming soon on</span>
+                    <span className="block text-sm font-semibold">App Store</span>
+                  </span>
+                </span>
+              )}
             </div>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Android only for now. You may need to allow "install from unknown sources" the first time.
+            </p>
           </Reveal>
 
           <div className="mt-8 flex gap-2">
