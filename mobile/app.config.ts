@@ -35,7 +35,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     package: 'co.za.empiredeliveries',
     config: {
       googleMaps: {
-        apiKey: 'AIzaSyBESjSoSiyC21HwPyZ_1VPYmbNn5-9irig',
+        // Was hardcoded here and got flagged by GitHub secret scanning once
+        // pushed. Set via `eas env:create` (or the EAS dashboard) per build
+        // profile instead — see eas.json's "env" blocks for the pattern
+        // already used for EAS_PROJECT_ID.
+        apiKey: process.env.GOOGLE_MAPS_API_KEY ?? '',
       },
     },
     permissions: [
