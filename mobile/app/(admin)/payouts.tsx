@@ -105,7 +105,7 @@ export default function AdminPayoutsScreen() {
       'Reason (optional). Funds will be returned to their wallet.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Reject', style: 'destructive', onPress: (reason) => rejectMutation.mutate({ id: item.id, reason }) },
+        { text: 'Reject', style: 'destructive', onPress: (reason?: string) => rejectMutation.mutate({ id: item.id, reason }) },
       ],
       'plain-text',
     );

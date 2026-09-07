@@ -2,15 +2,14 @@
   "expo": {
     "name": "Empire Deliveries Mobile",
     "slug": "empire-deliveries-mobile",
-    "version": "1.0.12",
-    "sdkVersion": "54.0.0",
+    "version": "1.0.17",
     "platforms": [
       "ios",
       "android"
     ],
     "orientation": "portrait",
     "android": {
-      "versionCode": 12
+      "versionCode": 17
     }
   }
 }
