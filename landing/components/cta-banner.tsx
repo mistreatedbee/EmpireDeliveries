@@ -31,10 +31,13 @@ export function CtaBanner() {
                 of delivery across Africa.
               </p>
               <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                <Button size="lg" className="group h-12 bg-brand-blue px-7 text-base text-white hover:bg-brand-blue/90">
+                <a
+                  href="#download"
+                  className="group inline-flex h-12 items-center justify-center rounded-lg bg-brand-blue px-7 text-base font-medium text-white transition-all hover:bg-brand-blue/90"
+                >
                   Download the app
                   <ArrowRight className="ml-1 size-4 transition-transform group-hover:translate-x-1" />
-                </Button>
+                </a>
                 <Button
                   size="lg"
                   variant="outline"

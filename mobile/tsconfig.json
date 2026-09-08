@@ -6,34 +6,33 @@
     "types": [
       "nativewind/types"
     ],
-    "baseUrl": ".",
     "paths": {
       "@/*": [
-        "src/*"
+        "./src/*"
       ],
       "@components/*": [
-        "src/components/*"
+        "./src/components/*"
       ],
       "@stores/*": [
-        "src/stores/*"
+        "./src/stores/*"
       ],
       "@hooks/*": [
-        "src/hooks/*"
+        "./src/hooks/*"
       ],
       "@services/*": [
-        "src/services/*"
+        "./src/services/*"
       ],
       "@types/*": [
-        "src/types/*"
+        "./src/types/*"
       ],
       "@constants/*": [
-        "src/constants/*"
+        "./src/constants/*"
       ],
       "@utils/*": [
-        "src/utils/*"
+        "./src/utils/*"
       ],
       "@lib/*": [
-        "src/lib/*"
+        "./src/lib/*"
       ]
     }
   },

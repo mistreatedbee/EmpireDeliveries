@@ -21,6 +21,14 @@ android/local.properties
 android/.cxx/
 *.keystore
 !debug.keystore
+*.jks
+credentials.json
+credentials/
+
+# Firebase — never commit, injected via EAS env vars / credentials instead
+google-services.json
+GoogleService-Info.plist
+*firebase-adminsdk*.json
 
 # iOS native build artifacts
 ios/Pods/
