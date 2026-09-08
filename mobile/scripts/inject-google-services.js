@@ -1,7 +1,10 @@
 // EAS Build never runs `expo prebuild` for this project (the android/ folder
 // is checked into git, so it's treated as a bare/native project) — so the
 // config-plugin step that would normally copy `googleServicesFile` into
-// android/app/google-services.json never runs on the build server.
+// android/app/google-services.json never runs on the build server. Wired up
+// as the eas-build-post-install hook (NOT eas-build-pre-build — that hook
+// name doesn't exist and silently never runs; see git history for how that
+// was found).
 //
 // google-services.json is deliberately gitignored (real Firebase project
 // config) and instead uploaded as the GOOGLE_SERVICES_JSON file-type env var
