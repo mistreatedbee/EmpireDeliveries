@@ -13,7 +13,7 @@
     "typecheck": "tsc --noEmit",
     "build:android:internal": "eas build --platform android --profile internal --non-interactive",
     "submit:android:internal": "eas submit --platform android --profile internal --latest",
-    "eas-build-pre-build": "node ./scripts/diagnose-autolinking.js"
+    "eas-build-pre-build": "node ./scripts/inject-google-services.js && node ./scripts/diagnose-autolinking.js"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.2.3",
