@@ -6,9 +6,9 @@
 // then grab the "Application Archive URL" from the build output / expo.dev dashboard.
 
 export const APK_DOWNLOAD_URL =
-  "https://expo.dev/artifacts/eas/DUbT8PY2HZpxpEUACYfkCJ7TU5A_0PyY0Z6Fs3FN5Gk.apk" // build a8f2bc8e, SDK 57, versionCode 17
+  "https://expo.dev/artifacts/eas/H4ef8CQEbkqyV3jSdEKySntjUiFHYSKELdfD-TdPhIs.apk" // build 0bc074ee, SDK 57, versionCode 18, working push notifications + logo
 
-export const APK_VERSION = "1.0.17"
+export const APK_VERSION = "1.0.18"
 
 // Store links — flip these on once the app is actually published.
 export const APP_STORE_URL: string | null = null
