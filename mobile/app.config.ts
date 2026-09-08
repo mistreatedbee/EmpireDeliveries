@@ -33,6 +33,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       backgroundColor: '#0A0A0A',
     },
     package: 'co.za.empiredeliveries',
+    // On EAS Build this resolves to the materialized path of the
+    // GOOGLE_SERVICES_JSON file-type env var; locally it falls back to a
+    // gitignored copy at mobile/google-services.json. Required for push
+    // notifications — without it the app can't register with FCM at all.
+    googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? './google-services.json',
     config: {
       googleMaps: {
         // Was hardcoded here and got flagged by GitHub secret scanning once
